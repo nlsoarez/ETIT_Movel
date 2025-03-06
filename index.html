@@ -17,7 +17,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             margin: auto;
         }
         .logo {
@@ -85,14 +85,11 @@
         <br>
         <h3>Resultados:</h3>
         <p id="resumo"></p>
-        <p id="perdasHorarios"></p>
-        <p id="tempoMedio"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -124,73 +121,54 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempoTotal = 0;
-            let numOutages = 0;
-            let perdasPorHorario = {};
-            let perdasTotal = 0;
-            let tempoGanhoTotal = 0;
-            let tempoPerdaTotal = 0;
+            let tempos = [];
+            let perdasPorHora = {};
 
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
-                    let tempo = (new Date(row[3]) - new Date(row[2])) / 60000; // tempo em minutos
-                    tempoTotal += tempo;
-                    numOutages++;
+                if (row[1] === matricula) {
+                    let inicio = new Date((row[2] - (25567 + 2)) * 86400 * 1000);
+                    let fim = new Date((row[3] - (25567 + 2)) * 86400 * 1000);
+                    let tempo = (fim - inicio) / 60000; // Tempo em minutos
+                    tempos.push(tempo);
 
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
+                    let perdaHFC = (row[5] === 1 && row[6] === 0);
+                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
+                    let perdaGPON = (row[7] === 1 && row[8] === 0);
 
-                    if (ganhoHFC || ganhoGPON) {
-                        ganhos.push({ id: row[0], tempo: tempo });
-                        tempoGanhoTotal += tempo; // Acumulando tempo dos ganhos
-                    }
+                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
                     if (perdaHFC || perdaGPON) {
-                        perdas.push({ id: row[0], tempo: tempo });
-                        tempoPerdaTotal += tempo; // Acumulando tempo das perdas
-
-                        // Registrando perdas por horário
-                        let hora = new Date(row[2]).getHours();
-                        if (!perdasPorHorario[hora]) {
-                            perdasPorHorario[hora] = 0;
-                        }
-                        perdasPorHorario[hora]++;
-                        perdasTotal++;
+                        perdas.push(row[0]);
+                        let hora = inicio.getHours();
+                        if (!perdasPorHora[hora]) perdasPorHora[hora] = 0;
+                        perdasPorHora[hora]++;
                     }
-
-                    // Adicionando linha na tabela
-                    let tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-                    let rowTabela = tabela.insertRow();
-                    rowTabela.insertCell(0).innerText = row[0];
-                    rowTabela.insertCell(1).innerHTML = (ganhoHFC || ganhoGPON) ? '<span class="ganho">Ganho</span>' : '<span class="perda">Perda</span>';
-                    rowTabela.insertCell(2).innerText = tempo.toFixed(2);
                 }
             });
 
-            // Calculando tempo médio
-            let tempoMedio = numOutages > 0 ? (tempoTotal / numOutages).toFixed(2) : 0;
-            document.getElementById('tempoMedio').innerText = `Tempo Médio: ${tempoMedio} minutos`;
+            let tempoMedio = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+            let horasMaisPerdas = Object.entries(perdasPorHora).sort((a, b) => b[1] - a[1]);
 
-            // Calculando tempo médio de ganho e perda
-            let tempoMedioGanho = ganhos.length > 0 ? (tempoGanhoTotal / ganhos.length).toFixed(2) : 0;
-            let tempoMedioPerda = perdas.length > 0 ? (tempoPerdaTotal / perdas.length).toFixed(2) : 0;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio.toFixed(2)} minutos | Horas com Mais Perdas: ${horasMaisPerdas.map(h => h[0] + 'h (' + h[1] + ')').join(', ')}`;
+            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
+            tabela.innerHTML = "";
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio de Ganho: ${tempoMedioGanho} minutos | Tempo Médio de Perda: ${tempoMedioPerda} minutos`;
+            ganhos.forEach(id => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = id;
+                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+            });
 
-            // Exibindo perdas por horário
-            let perdasHorariosTexto = "Perdas por horário:\n";
-            for (let hora in perdasPorHorario) {
-                perdasHorariosTexto += `Hora ${hora}: ${perdasPorHorario[hora]} perdas\n`;
-            }
-            document.getElementById('perdasHorarios').innerText = perdasHorariosTexto;
+            perdas.forEach(id => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = id;
+                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+            });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
-            document.getElementById('perdasHorarios').innerText = "";
-            document.getElementById('tempoMedio').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
