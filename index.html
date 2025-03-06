@@ -17,7 +17,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             margin: auto;
         }
         .logo {
@@ -85,10 +85,6 @@
         <br>
         <h3>Resultados:</h3>
         <p id="resumo"></p>
-        <p id="nomeUsuario"></p>
-        <p id="tempoMedioGanhos"></p>
-        <p id="tempoMedioPerdas"></p>
-        <p id="tempoMedioTotal"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
@@ -99,28 +95,15 @@
             </thead>
             <tbody></tbody>
         </table>
+        <br>
+        <h4>Tempo Médio:</h4>
+        <p id="mediaGanhos"></p>
+        <p id="mediaPerdas"></p>
+        <p id="mediaTotal"></p>
     </div>
 
     <script>
         let dadosPlanilha = [];
-
-        // Mapeamento de logins para nomes
-        const loginsNomes = {
-            "N0238475": "MARLEY MARQUES RIBEIRO",
-            "N5923221": "KELLY PINHEIRO LIRA",
-            "F160641": "JENNIFER MARIA ANDRADE SANTOS",
-            "N5772086": "THIAGO PEREIRA DA SILVA",
-            "N0239871": "LEONARDO FERREIRA LIMA DE ALMEIDA",
-            "N5577565": "MARISTELLA MARCIA DOS SANTOS",
-            "N5737414": "SANDRO DA SILVA CARVALHO",
-            "N5972428": "CRISTIANE HERMOGENES DA SILVA",
-            "N6173055": "JEFFERSON LUIS GONÇALVES COITINHO",
-            "N5932090": "EVILÁZIO ANDRÉ DE MAGALHÃES GOMES PEREIRA",
-            "N0255801": "ELBERTON ANICETO HENRIQUE",
-            "N4014011": "ALAN MARINHO DIAS",
-            "N5923996": "JULIO CESAR SANTOS SOARES"
-        };
-
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -130,6 +113,9 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                // Depuração - Exibe os dados lidos da planilha
+                console.log(dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -142,77 +128,92 @@
                 return;
             }
 
-            // Busca o nome correspondente ao login
-            const nome = loginsNomes[matricula];
-            if (nome) {
-                document.getElementById('nomeUsuario').innerText = `Nome: ${nome}`;
-            } else {
-                document.getElementById('nomeUsuario').innerText = "Nome não encontrado.";
-            }
-
             let ganhos = [];
             let perdas = [];
-            let tempoTotalGanhos = 0;
-            let tempoTotalPerdas = 0;
+            let tempoGanhos = 0;
+            let tempoPerdas = 0;
+            let totalGanhos = 0;
+            let totalPerdas = 0;
 
+            // Adicionar log para verificação
+            console.log("Iniciando a consulta para a matrícula:", matricula);
+
+            // Verificando os dados da planilha
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula) {
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                console.log("Analisando linha:", row);
 
-                    const tempo = row[5]; // Coluna E (Tempo = Fim - Início)
-                    if (ganhoHFC || ganhoGPON) {
-                        ganhos.push({ id: row[0], tempo: tempo });
-                        tempoTotalGanhos += tempo;
-                    }
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push({ id: row[0], tempo: tempo });
-                        tempoTotalPerdas += tempo;
+                let tipo = row[6]; // Tipo: Ganho ou Perda
+                let tempo = row[4]; // Tempo (minutos)
+
+                // Desconsiderando se "Tempo" estiver vazio ou zero
+                if (!tempo || tempo === 0) {
+                    console.log("Tempo vazio ou zero, ignorando linha.");
+                    return; // Ignora essa linha se "Tempo" estiver vazio ou zero
+                }
+
+                // Garantir que tipo seja uma string válida
+                tipo = (tipo || "").toString().toLowerCase();
+
+                // Adicionar log para verificar tipo e matrícula
+                console.log("Tipo:", tipo, "Matrícula na linha:", row[1]);
+
+                // Verificar se a matrícula corresponde e se tipo é válido
+                if (row[1] === matricula && tipo) {
+                    console.log(`Matrícula encontrada: ${row[1]}, Tipo: ${tipo}, Tempo: ${tempo}`);
+
+                    // Verificar se é "Ganho" ou "Perda"
+                    if (tipo === "ganho") {
+                        ganhos.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
+                        tempoGanhos += tempo;
+                        totalGanhos++;
+                    } else if (tipo === "perda") {
+                        perdas.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
+                        tempoPerdas += tempo;
+                        totalPerdas++;
                     }
                 }
             });
 
-            // Exibe o resumo
+            // Adicionar log para verificação dos resultados
+            console.log("Ganhos:", ganhos, "Perdas:", perdas);
+
+            // Calcular as médias
+            let mediaGanhos = totalGanhos > 0 ? tempoGanhos / totalGanhos : 0;
+            let mediaPerdas = totalPerdas > 0 ? tempoPerdas / totalPerdas : 0;
+            let mediaTotal = (totalGanhos + totalPerdas) > 0 ? (tempoGanhos + tempoPerdas) / (totalGanhos + totalPerdas) : 0;
+
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            document.getElementById('mediaGanhos').innerText = `Média Ganhos: ${mediaGanhos.toFixed(2)} minutos`;
+            document.getElementById('mediaPerdas').innerText = `Média Perdas: ${mediaPerdas.toFixed(2)} minutos`;
+            document.getElementById('mediaTotal').innerText = `Média Total: ${mediaTotal.toFixed(2)} minutos`;
 
-            // Calcula as médias
-            const tempoMedioGanhos = ganhos.length > 0 ? (tempoTotalGanhos / ganhos.length).toFixed(2) : 0;
-            const tempoMedioPerdas = perdas.length > 0 ? (tempoTotalPerdas / perdas.length).toFixed(2) : 0;
-            const tempoMedioTotal = (ganhos.length + perdas.length) > 0 ? ((tempoTotalGanhos + tempoTotalPerdas) / (ganhos.length + perdas.length)).toFixed(2) : 0;
-
-            // Exibe as médias
-            document.getElementById('tempoMedioGanhos').innerText = `Tempo Médio de Ganhos: ${tempoMedioGanhos} minutos`;
-            document.getElementById('tempoMedioPerdas').innerText = `Tempo Médio de Perdas: ${tempoMedioPerdas} minutos`;
-            document.getElementById('tempoMedioTotal').innerText = `Tempo Médio Total: ${tempoMedioTotal} minutos`;
-
-            // Preenche a tabela
+            // Limpar tabela antes de adicionar novos resultados
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
+            // Inserir os resultados de Ganhos
             ganhos.forEach(item => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = `${item.tempo} minutos`;
+                row.insertCell(2).innerText = item.tempo;
             });
 
+            // Inserir os resultados de Perdas
             perdas.forEach(item => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = `${item.tempo} minutos`;
+                row.insertCell(2).innerText = item.tempo;
             });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
-            document.getElementById('nomeUsuario').innerText = "";
-            document.getElementById('tempoMedioGanhos').innerText = "";
-            document.getElementById('tempoMedioPerdas').innerText = "";
-            document.getElementById('tempoMedioTotal').innerText = "";
+            document.getElementById('mediaGanhos').innerText = "";
+            document.getElementById('mediaPerdas').innerText = "";
+            document.getElementById('mediaTotal').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
