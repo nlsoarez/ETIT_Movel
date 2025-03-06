@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Outages</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdnjs.cloudflare.com;">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -98,24 +99,6 @@
 
     <script>
         let dadosPlanilha = [];
-
-        // Mapeamento dos logins para os nomes
-        const loginsParaNomes = {
-            "N0238475": "MARLEY MARQUES RIBEIRO",
-            "N5923221": "KELLY PINHEIRO LIRA",
-            "F160641": "JENNIFER MARIA ANDRADE SANTOS",
-            "N5772086": "THIAGO PEREIRA DA SILVA",
-            "N0239871": "LEONARDO FERREIRA LIMA DE ALMEIDA",
-            "N5577565": "MARISTELLA MARCIA DOS SANTOS",
-            "N5737414": "SANDRO DA SILVA CARVALHO",
-            "N5972428": "CRISTIANE HERMOGENES DA SILVA",
-            "N6173055": "JEFFERSON LUIS GONÇALVES COITINHO",
-            "N5932090": "EVILÁZIO ANDRÉ DE MAGALHÃES GOMES PEREIRA",
-            "N0255801": "ELBERTON ANICETO HENRIQUE",
-            "N4014011": "ALAN MARINHO DIAS",
-            "N5923996": "JULIO CESAR SANTOS SOARES"
-        };
-
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -137,29 +120,37 @@
                 return;
             }
 
-            // Verifica se o login existe no mapeamento
-            const nome = loginsParaNomes[matricula];
-            if (!nome) {
-                alert("Login não encontrado!");
-                return;
-            }
-
             let ganhos = [];
             let perdas = [];
+            let tempos = [];
+            let perdasPorHora = {};
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula) {
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                    let inicio = new Date((row[2] - (25567 + 2)) * 86400 * 1000);
+                    let fim = new Date((row[3] - (25567 + 2)) * 86400 * 1000);
+                    let tempo = (fim - inicio) / 60000; // Tempo em minutos
+                    tempos.push(tempo);
+
+                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
+                    let perdaHFC = (row[5] === 1 && row[6] === 0);
+                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
+                    let perdaGPON = (row[7] === 1 && row[8] === 0);
 
                     if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
+                    if (perdaHFC || perdaGPON) {
+                        perdas.push(row[0]);
+                        let hora = inicio.getHours();
+                        if (!perdasPorHora[hora]) perdasPorHora[hora] = 0;
+                        perdasPorHora[hora]++;
+                    }
                 }
             });
 
-            document.getElementById('resumo').innerText = `${nome} - Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            let tempoMedio = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+            let horasMaisPerdas = Object.entries(perdasPorHora).sort((a, b) => b[1] - a[1]);
+
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio.toFixed(2)} minutos | Horas com Mais Perdas: ${horasMaisPerdas.map(h => h[0] + 'h (' + h[1] + ')').join(', ')}`;
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
