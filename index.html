@@ -90,7 +90,7 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (Horas)</th>
+                    <th>Tempo (Minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -118,7 +118,7 @@
             const inicioDate = new Date(inicio);
             const fimDate = new Date(fim);
             if (isNaN(inicioDate) || isNaN(fimDate)) return 0; // Verifica se as datas são válidas
-            return ((fimDate - inicioDate) / (1000 * 3600)).toFixed(2); // Tempo em horas
+            return ((fimDate - inicioDate) / (1000 * 60)).toFixed(2); // Tempo em minutos
         }
 
         function consultarOutages() {
@@ -154,7 +154,7 @@
             const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / ganhos.length || 0).toFixed(2);
             const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / perdas.length || 0).toFixed(2);
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio: ${tempoMedioGanhos} horas | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedioPerdas} horas`;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedioPerdas} minutos`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
