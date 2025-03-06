@@ -21,7 +21,7 @@
             margin: auto;
         }
         .logo {
-            width: 100px; /* Diminuiu o tamanho da logo */
+            width: 100px;
             margin-bottom: 15px;
         }
         h2 {
@@ -34,7 +34,7 @@
             border-radius: 5px;
         }
         button {
-            background: #dc3545; /* Vermelho Claro */
+            background: #dc3545;
             color: white;
             border: none;
             cursor: pointer;
@@ -54,18 +54,18 @@
             text-align: center;
         }
         th {
-            background: #dc3545; /* Vermelho */
+            background: #dc3545;
             color: white;
         }
         .ganho {
-            background-color: #28a745; /* Verde */
+            background-color: #28a745;
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             font-weight: bold;
         }
         .perda {
-            background-color: #dc3545; /* Vermelho Vivo */
+            background-color: #dc3545;
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
@@ -136,11 +136,13 @@
             let totalGanhos = 0;
             let totalPerdas = 0;
 
+            // Adicionar log para verificação
+            console.log("Iniciando a consulta para a matrícula:", matricula);
+
             // Verificando os dados da planilha
             dadosPlanilha.forEach(row => {
-                console.log(row); // Exibe cada linha para verificar o conteúdo
+                console.log("Analisando linha:", row);
 
-                // Supondo que a matrícula esteja na coluna 1, tipo na coluna 6 e o tempo na coluna 4
                 let tipo = row[6]; // Tipo: Ganho ou Perda
                 let inicio = row[2]; // Início
                 let fim = row[3]; // Fim
@@ -148,15 +150,19 @@
 
                 // Desconsiderando se "Fim" está vazio ou zero
                 if (!fim || fim === 0) {
+                    console.log("Fim vazio ou zero, ignorando linha.");
                     return; // Ignora essa linha se "Fim" estiver vazio ou zero
                 }
 
                 // Garantir que tipo seja uma string válida
                 tipo = (tipo || "").toString().toLowerCase();
 
+                // Adicionar log para verificar tipo e matrícula
+                console.log("Tipo:", tipo, "Matrícula na linha:", row[1]);
+
                 // Verificar se a matrícula corresponde e se tipo é válido
                 if (row[1] === matricula && tipo) {
-                    console.log(`Tipo: ${tipo}, Tempo: ${tempo}`); // Depuração
+                    console.log(`Matrícula encontrada: ${row[1]}, Tipo: ${tipo}, Tempo: ${tempo}`);
 
                     // Verificar se é "Ganho" ou "Perda"
                     if (tipo === "ganho") {
@@ -170,6 +176,9 @@
                     }
                 }
             });
+
+            // Adicionar log para verificação dos resultados
+            console.log("Ganhos:", ganhos, "Perdas:", perdas);
 
             // Calcular as médias
             let mediaGanhos = totalGanhos > 0 ? tempoGanhos / totalGanhos : 0;
