@@ -3,96 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Outages</title>
+    <title>Consulta SLA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: auto;
-        }
-        .logo {
-            width: 100px; /* Diminuiu o tamanho da logo */
-            margin-bottom: 15px;
-        }
-        h2 {
-            color: #333;
-        }
-        input, button {
-            padding: 10px;
-            margin: 10px 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background: #dc3545; /* Vermelho Claro */
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background: #b02a37;
-        }
-        table {
-            width: 100%;
-            margin-top: 15px;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background: #dc3545; /* Vermelho */
-            color: white;
-        }
-        .ganho {
-            background-color: #28a745; /* Verde */
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .perda {
-            background-color: #dc3545; /* Vermelho Vivo */
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
+        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
+        .input-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
+        input, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        .botao { background-color: #d52b1e; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .botao:hover { background-color: #b2221a; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
+        th { background-color: #d52b1e; color: white; }
+        .ganho { background-color: green; color: white; }
+        .perda { background-color: red; color: white; }
+        .contador { font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
-        <h2>Painel ETIT Residencial</h2>
-        <input type="file" id="upload" accept=".xlsx">
-        <br>
-        <input type="text" id="matricula" placeholder="Digite o Login">
-        <button onclick="consultarOutages()">Consultar</button>
-        <button onclick="limparConsulta()">Limpar</button>
-        <br>
+        <h2>Painel ETIT Empresarial</h2>
+        <div class="input-group">
+            <input type="file" id="upload" accept=".xlsx">
+        </div>
+        <div class="input-group">
+            <input type="text" id="login" placeholder="Digite o login ou nome">
+            <button class="botao" onclick="consultarSLA()">Consultar</button>
+        </div>
         <h3>Resultados:</h3>
-        <p id="resumo"></p>
-        <p id="mediaGanhos"></p>
-        <p id="mediaPerdas"></p>
-        <table id="tabelaResultados">
+        <div id="contadores" class="contador"></div>
+
+        <h3>Dentro do SLA:</h3>
+        <div id="tempoMedioGanhos" class="contador"></div>
+        <table id="tabelaGanhos">
             <thead>
-                <tr>
-                    <th>ID Outage</th>
-                    <th>Tipo</th>
-                </tr>
+                <tr><th>Ticket</th><th>Tempo</th></tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <h3>Fora do SLA:</h3>
+        <div id="tempoMedioPerdas" class="contador"></div>
+        <table id="tabelaPerdas">
+            <thead>
+                <tr><th>Ticket</th><th>Tempo</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -100,6 +54,7 @@
 
     <script>
         let dadosPlanilha = [];
+
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -109,75 +64,71 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                console.log("Planilha carregada:", dadosPlanilha); // Debug
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
         });
 
-        function consultarOutages() {
-            const matricula = document.getElementById('matricula').value.trim();
-            if (!matricula) {
-                alert("Digite uma matrícula!");
+        function consultarSLA() {
+            const login = document.getElementById('login').value.trim();
+            if (!login) {
+                alert("Digite um login ou nome!");
                 return;
             }
 
+            console.log("Consultando para:", login); // Debug
+
             let ganhos = [];
             let perdas = [];
-            let tempoGanhos = 0;
-            let tempoPerdas = 0;
-            let totalGanhos = 0;
-            let totalPerdas = 0;
+            let totalTempoGanhos = 0;
+            let totalTempoPerdas = 0;
 
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula) {
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                if (!row || row.length < 5) return; // Ignorar linhas incompletas
 
-                    if (ganhoHFC || ganhoGPON) {
-                        ganhos.push(row[0]);
-                        tempoGanhos += parseFloat(row[4]); // Supondo que o tempo esteja na coluna 5
-                        totalGanhos++;
-                    }
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-                        tempoPerdas += parseFloat(row[4]); // Supondo que o tempo esteja na coluna 5
-                        totalPerdas++;
+                let ticket = row[0];  // Coluna A - Tickets
+                let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
+                let usuarioNome = row[2]?.toString().trim().toLowerCase(); // Coluna C - Nomes
+                let sla = row[3]; // Coluna D - SLA (1 dentro, 0 fora)
+                let tempo = parseFloat(row[4]); // Coluna E - Tempo (convertido para número)
+
+                if (usuarioLogin.includes(login.toLowerCase()) || usuarioNome.includes(login.toLowerCase())) {
+                    console.log(`Encontrado: Ticket ${ticket}, SLA: ${sla}, Tempo: ${tempo}`); // Debug
+
+                    if (sla === 1) {
+                        ganhos.push([ticket, tempo]);
+                        totalTempoGanhos += tempo;
+                    } else if (sla === 0) {
+                        perdas.push([ticket, tempo]);
+                        totalTempoPerdas += tempo;
                     }
                 }
             });
 
-            // Calcular as médias
-            let mediaGanhos = totalGanhos > 0 ? (tempoGanhos / totalGanhos).toFixed(2) : 0;
-            let mediaPerdas = totalPerdas > 0 ? (tempoPerdas / totalPerdas).toFixed(2) : 0;
+            let mediaGanhos = ganhos.length > 0 ? (totalTempoGanhos / ganhos.length).toFixed(2) : "N/A";
+            let mediaPerdas = perdas.length > 0 ? (totalTempoPerdas / perdas.length).toFixed(2) : "N/A";
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            document.getElementById('mediaGanhos').innerText = `Média de tempo dos ganhos: ${mediaGanhos} horas`;
-            document.getElementById('mediaPerdas').innerText = `Média de tempo das perdas: ${mediaPerdas} horas`;
+            document.getElementById("contadores").innerHTML = `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
+            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
+            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
 
-            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-            tabela.innerHTML = "";
-
-            ganhos.forEach(id => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
-                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-            });
-
-            perdas.forEach(id => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
-                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-            });
+            atualizarTabela("tabelaGanhos", ganhos, "ganho");
+            atualizarTabela("tabelaPerdas", perdas, "perda");
         }
 
-        function limparConsulta() {
-            document.getElementById('matricula').value = "";
-            document.getElementById('resumo').innerText = "";
-            document.getElementById('mediaGanhos').innerText = "";
-            document.getElementById('mediaPerdas').innerText = "";
-            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
+        function atualizarTabela(idTabela, dados, classe) {
+            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
+            tabela.innerHTML = "";
+            dados.forEach(item => {
+                let row = tabela.insertRow();
+                let cell1 = row.insertCell(0);
+                let cell2 = row.insertCell(1);
+                cell1.innerText = item[0]; // Ticket
+                cell2.innerText = item[1]; // Tempo
+                row.className = classe;
+            });
         }
     </script>
 </body>
