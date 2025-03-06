@@ -22,7 +22,7 @@
         }
         .logo {
             width: 100px; /* Diminuiu o tamanho da logo */
-            15px;
+            margin-bottom: 15px;
         }
         h2 {
             color: #333;
@@ -90,6 +90,7 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
+                    <th>Tempo (Horas)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -121,20 +122,41 @@
 
             let ganhos = [];
             let perdas = [];
+            let tempos = {};
+            let horariosPerdas = {};
 
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula) {
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
+                    let tempo = calcularTempo(row[2], row[3]);  // Calculando o tempo em horas
+                    let horarioInicio = new Date(row[2]).getHours(); // Extraindo hora de início
 
-                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
+                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
+                    let perdaHFC = (row[5] === 1 && row[6] === 0);
+                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
+                    let perdaGPON = (row[7] === 1 && row[8] === 0);
+
+                    if (!tempos[row[1]]) tempos[row[1]] = { total: 0, perdas: 0, ganhos: 0, count: 0 };
+                    tempos[row[1]].total += tempo;
+                    tempos[row[1]].count++;
+
+                    if (ganhoHFC || ganhoGPON) {
+                        ganhos.push(row[0]);
+                        tempos[row[1]].ganhos++;
+                    }
+                    if (perdaHFC || perdaGPON) {
+                        perdas.push(row[0]);
+                        tempos[row[1]].perdas++;
+                        if (!horariosPerdas[horarioInicio]) horariosPerdas[horarioInicio] = 0;
+                        horariosPerdas[horarioInicio]++;
+                    }
                 }
             });
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            let horarioMaisPerda = Object.keys(horariosPerdas).reduce((a, b) => horariosPerdas[a] > horariosPerdas[b] ? a : b);
+
+            let resumo = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Horário com mais perdas: ${horarioMaisPerda}h`;
+            document.getElementById('resumo').innerText = resumo;
+
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
@@ -142,13 +164,22 @@
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+                row.insertCell(2).innerText = (tempos[matricula].total / tempos[matricula].count).toFixed(2);  // Tempo médio
             });
 
             perdas.forEach(id => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+                row.insertCell(2).innerText = (tempos[matricula].total / tempos[matricula].count).toFixed(2);  // Tempo médio
             });
+        }
+
+        function calcularTempo(inicio, fim) {
+            const inicioDate = new Date(inicio);
+            const fimDate = new Date(fim);
+            const tempo = (fimDate - inicioDate) / (1000 * 60 * 60);  // Convertendo para horas
+            return tempo;
         }
 
         function limparConsulta() {
