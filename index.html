@@ -113,14 +113,24 @@
         });
 
         function calcularTempo(inicio, fim) {
-            if (!inicio || !fim) return 0;
-            const [h1, m1] = inicio.split(':').map(Number);
-            const [h2, m2] = fim.split(':').map(Number);
-            let minutosInicio = h1 * 60 + m1;
-            let minutosFim = h2 * 60 + m2;
-            if (minutosFim < minutosInicio) minutosFim += 1440;
-            return (minutosFim - minutosInicio).toFixed(2);
-        }
+    if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
+
+    // Transforma "HH:MM:SS" em horas, minutos e segundos
+    let [horaInicio, minutoInicio, segundoInicio] = inicio.split(":").map(Number);
+    let [horaFim, minutoFim, segundoFim] = fim.split(":").map(Number);
+
+    // Converte para segundos totais desde 00:00
+    let segundosInicio = horaInicio * 3600 + minutoInicio * 60 + segundoInicio;
+    let segundosFim = horaFim * 3600 + minutoFim * 60 + segundoFim;
+
+    // Se o tempo final for menor, significa que virou o dia
+    if (segundosFim < segundosInicio) {
+        segundosFim += 24 * 3600; // Adiciona 24 horas para manter o cálculo correto
+    }
+
+    // Calcula a diferença e converte para minutos
+    return ((segundosFim - segundosInicio) / 60).toFixed(2);
+}
 
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim();
