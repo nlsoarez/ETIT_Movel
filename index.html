@@ -113,24 +113,27 @@
         });
 
         function calcularTempo(inicio, fim) {
-    if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
+            if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
 
-    // Transforma "HH:MM:SS" em horas, minutos e segundos
-    let [horaInicio, minutoInicio, segundoInicio] = inicio.split(":").map(Number);
-    let [horaFim, minutoFim, segundoFim] = fim.split(":").map(Number);
+            // Verifica se 'inicio' e 'fim' são strings válidas
+            if (typeof inicio !== 'string' || typeof fim !== 'string') return 0;
 
-    // Converte para segundos totais desde 00:00
-    let segundosInicio = horaInicio * 3600 + minutoInicio * 60 + segundoInicio;
-    let segundosFim = horaFim * 3600 + minutoFim * 60 + segundoFim;
+            // Transforma "HH:MM:SS" em horas, minutos e segundos
+            let [horaInicio, minutoInicio, segundoInicio] = inicio.split(":").map(Number);
+            let [horaFim, minutoFim, segundoFim] = fim.split(":").map(Number);
 
-    // Se o tempo final for menor, significa que virou o dia
-    if (segundosFim < segundosInicio) {
-        segundosFim += 24 * 3600; // Adiciona 24 horas para manter o cálculo correto
-    }
+            // Converte para segundos totais desde 00:00
+            let segundosInicio = horaInicio * 3600 + minutoInicio * 60 + segundoInicio;
+            let segundosFim = horaFim * 3600 + minutoFim * 60 + segundoFim;
 
-    // Calcula a diferença e converte para minutos
-    return ((segundosFim - segundosInicio) / 60).toFixed(2);
-}
+            // Se o tempo final for menor, significa que virou o dia
+            if (segundosFim < segundosInicio) {
+                segundosFim += 24 * 3600; // Adiciona 24 horas para manter o cálculo correto
+            }
+
+            // Calcula a diferença e converte para minutos
+            return ((segundosFim - segundosInicio) / 60).toFixed(2);
+        }
 
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim();
@@ -145,6 +148,7 @@
             let temposPerdas = [];
 
             dadosPlanilha.forEach(row => {
+                console.log(row);  // Verifique o conteúdo de cada linha da planilha
                 if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
                     let ganhoHFC = (row[4] === 1 && row[5] === 1);
                     let perdaHFC = (row[4] === 1 && row[5] === 0);
