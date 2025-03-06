@@ -37,7 +37,7 @@
         <div id="tempoMedioGanhos" class="contador"></div>
         <table id="tabelaGanhos">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Outage</th><th>Tempo</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -46,7 +46,7 @@
         <div id="tempoMedioPerdas" class="contador"></div>
         <table id="tabelaPerdas">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Outage</th><th>Tempo</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -88,20 +88,21 @@
             dadosPlanilha.forEach(row => {
                 if (!row || row.length < 5) return; // Ignorar linhas incompletas
 
-                let ticket = row[0];  // Coluna A - Tickets
+                let outage = row[0];  // Coluna A - Outage
                 let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
                 let usuarioNome = row[2]?.toString().trim().toLowerCase(); // Coluna C - Nomes
-                let sla = row[3]; // Coluna D - SLA (1 dentro, 0 fora)
-                let tempo = parseFloat(row[4]); // Coluna E - Tempo (convertido para número)
+                let inicio = row[3]; // Coluna D - Início
+                let fim = row[4]; // Coluna E - Fim
+                let tempo = parseTime(row[5]); // Coluna F - Tempo
 
                 if (usuarioLogin.includes(login.toLowerCase()) || usuarioNome.includes(login.toLowerCase())) {
-                    console.log(`Encontrado: Ticket ${ticket}, SLA: ${sla}, Tempo: ${tempo}`); // Debug
+                    console.log(`Encontrado: Outage ${outage}, Tempo: ${tempo}`); // Debug
 
-                    if (sla === 1) {
-                        ganhos.push([ticket, tempo]);
+                    if (tempo <= 240) { // Definindo um SLA de 4 horas (240 minutos)
+                        ganhos.push([outage, tempo]);
                         totalTempoGanhos += tempo;
-                    } else if (sla === 0) {
-                        perdas.push([ticket, tempo]);
+                    } else {
+                        perdas.push([outage, tempo]);
                         totalTempoPerdas += tempo;
                     }
                 }
@@ -110,12 +111,23 @@
             let mediaGanhos = ganhos.length > 0 ? (totalTempoGanhos / ganhos.length).toFixed(2) : "N/A";
             let mediaPerdas = perdas.length > 0 ? (totalTempoPerdas / perdas.length).toFixed(2) : "N/A";
 
-            document.getElementById("contadores").innerHTML = `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
+            document.getElementById("contadores").innerHTML = `
+                Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}
+            `;
+
             document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
             document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
+        }
+
+        function parseTime(timeStr) {
+            const timeParts = timeStr.split(':');
+            if (timeParts.length === 3) {
+                return parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]); // Converte para minutos
+            }
+            return 0; // Caso o formato esteja incorreto, retorna 0
         }
 
         function atualizarTabela(idTabela, dados, classe) {
@@ -125,7 +137,7 @@
                 let row = tabela.insertRow();
                 let cell1 = row.insertCell(0);
                 let cell2 = row.insertCell(1);
-                cell1.innerText = item[0]; // Ticket
+                cell1.innerText = item[0]; // Outage
                 cell2.innerText = item[1]; // Tempo
                 row.className = classe;
             });
