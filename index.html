@@ -90,13 +90,11 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (minutos)</th>
+                    <th>Tempo (Horas)</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <h3>Resumo por Login:</h3>
-        <p id="resumoLogin"></p>
     </div>
 
     <script>
@@ -115,15 +113,14 @@
             reader.readAsArrayBuffer(file);
         });
 
-        function parseDateTime(dateTimeStr) {
-            const [datePart, timePart] = dateTimeStr.split(' ');
-            const [day, month, year] = datePart.split('/');
-            const [hour, minute] = timePart.split(':');
-            return new Date(year, month - 1, day, hour, minute);
+        function calcularTempo(inicio, fim) {
+            const inicioDate = new Date(inicio);
+            const fimDate = new Date(fim);
+            return ((fimDate - inicioDate) / (1000 * 3600)).toFixed(2); // Tempo em horas
         }
 
         function consultarOutages() {
-            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
+            const matricula = document.getElementById('matricula').value.trim();
             if (!matricula) {
                 alert("Digite uma matrícula!");
                 return;
@@ -131,66 +128,53 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempoTotalGanhos = 0;
-            let tempoTotalPerdas = 0;
+            let temposGanhos = [];
+            let temposPerdas = [];
 
             dadosPlanilha.forEach(row => {
-                if (row[1] && row[1].toUpperCase() === matricula) {
-                    const inicio = parseDateTime(row[2]);
-                    const fim = parseDateTime(row[3]);
-                    if (!isNaN(inicio) && !isNaN(fim)) {
-                        const duracao = (fim - inicio) / (1000 * 60); // Duração em minutos
+                if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
+                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
+                    let perdaHFC = (row[4] === 1 && row[5] === 0);
+                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
+                    let perdaGPON = (row[6] === 1 && row[7] === 0);
 
-                        let ganhoHFC = (row[4] === 1 && row[5] === 1);
-                        let perdaHFC = (row[4] === 1 && row[5] === 0);
-                        let ganhoGPON = (row[6] === 1 && row[7] === 1);
-                        let perdaGPON = (row[6] === 1 && row[7] === 0);
-
-                        if (ganhoHFC || ganhoGPON) {
-                            ganhos.push({ id: row[0], duracao });
-                            tempoTotalGanhos += duracao;
-                        }
-                        if (perdaHFC || perdaGPON) {
-                            perdas.push({ id: row[0], duracao });
-                            tempoTotalPerdas += duracao;
-                        }
+                    if (ganhoHFC || ganhoGPON) {
+                        ganhos.push(row[0]);
+                        temposGanhos.push(calcularTempo(row[2], row[3]));
+                    }
+                    if (perdaHFC || perdaGPON) {
+                        perdas.push(row[0]);
+                        temposPerdas.push(calcularTempo(row[2], row[3]));
                     }
                 }
             });
 
-            const tempoMedioGanhos = ganhos.length > 0 ? (tempoTotalGanhos / ganhos.length).toFixed(2) : 0;
-            const tempoMedioPerdas = perdas.length > 0 ? (tempoTotalPerdas / perdas.length).toFixed(2) : 0;
-            const tempoMedioTotal = ((tempoTotalGanhos + tempoTotalPerdas) / (ganhos.length + perdas.length)).toFixed(2);
+            const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / ganhos.length || 0).toFixed(2);
+            const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / perdas.length || 0).toFixed(2);
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            document.getElementById('resumoLogin').innerText = `
-                Ganhos: ${ganhos.length} | Tempo Médio Ganhos: ${tempoMedioGanhos} minutos
-                Perdas: ${perdas.length} | Tempo Médio Perdas: ${tempoMedioPerdas} minutos
-                Tempo Médio Total: ${tempoMedioTotal} minutos
-            `;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio: ${tempoMedioGanhos} horas | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedioPerdas} horas`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            ganhos.forEach(item => {
+            ganhos.forEach((id, index) => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.duracao.toFixed(2);
+                row.insertCell(2).innerText = temposGanhos[index];
             });
 
-            perdas.forEach(item => {
+            perdas.forEach((id, index) => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.duracao.toFixed(2);
+                row.insertCell(2).innerText = temposPerdas[index];
             });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
-            document.getElementById('resumoLogin').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
