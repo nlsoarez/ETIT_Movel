@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Outages</title>
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; font-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self' https://cdnjs.cloudflare.com;">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body {
@@ -122,35 +121,20 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempos = [];
-            let perdasPorHora = {};
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula) {
-                    let inicio = new Date((row[2] - (25567 + 2)) * 86400 * 1000);
-                    let fim = new Date((row[3] - (25567 + 2)) * 86400 * 1000);
-                    let tempo = (fim - inicio) / 60000; // Tempo em minutos
-                    tempos.push(tempo);
-
-                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
-                    let perdaHFC = (row[5] === 1 && row[6] === 0);
-                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
-                    let perdaGPON = (row[7] === 1 && row[8] === 0);
+                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
+                    let perdaHFC = (row[2] === 1 && row[3] === 0);
+                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
+                    let perdaGPON = (row[4] === 1 && row[5] === 0);
 
                     if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-                        let hora = inicio.getHours();
-                        if (!perdasPorHora[hora]) perdasPorHora[hora] = 0;
-                        perdasPorHora[hora]++;
-                    }
+                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
                 }
             });
 
-            let tempoMedio = tempos.reduce((a, b) => a + b, 0) / tempos.length;
-            let horasMaisPerdas = Object.entries(perdasPorHora).sort((a, b) => b[1] - a[1]);
-
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio.toFixed(2)} minutos | Horas com Mais Perdas: ${horasMaisPerdas.map(h => h[0] + 'h (' + h[1] + ')').join(', ')}`;
+            document.getElementById('resumo').innerText = Ganhos: ${ganhos.length} | Perdas: ${perdas.length};
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
