@@ -115,8 +115,8 @@
                     return; // Ignora essa linha e continua o loop
                 }
 
-                // Comparar matrícula
-                if (row[1] && row[1].toString().toLowerCase() === matricula) {
+                // Comparar matrícula, convertendo a matrícula da planilha para minúsculas
+                if (row[1] && row[1].toString().trim().toLowerCase() === matricula) {
                     let ganhoHFC = (row[4] === '1' && row[5] === '1');
                     let perdaHFC = (row[4] === '1' && row[5] === '0');
                     let ganhoGPON = (row[6] === '1' && row[7] === '1');
