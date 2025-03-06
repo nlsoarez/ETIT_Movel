@@ -151,15 +151,19 @@
                     return; // Ignora essa linha se "Fim" estiver vazio ou zero
                 }
 
+                // Garantir que tipo seja uma string válida
+                tipo = (tipo || "").toString().toLowerCase();
+
+                // Verificar se a matrícula corresponde e se tipo é válido
                 if (row[1] === matricula && tipo) {
                     console.log(`Tipo: ${tipo}, Tempo: ${tempo}`); // Depuração
 
                     // Verificar se é "Ganho" ou "Perda"
-                    if (tipo.toLowerCase() === "ganho") {
+                    if (tipo === "ganho") {
                         ganhos.push(row[0]); // ID do outage
                         tempoGanhos += tempo;
                         totalGanhos++;
-                    } else if (tipo.toLowerCase() === "perda") {
+                    } else if (tipo === "perda") {
                         perdas.push(row[0]); // ID do outage
                         tempoPerdas += tempo;
                         totalPerdas++;
