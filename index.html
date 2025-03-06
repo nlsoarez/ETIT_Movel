@@ -22,11 +22,20 @@
         th {
             background-color: #f2f2f2;
         }
+
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
 
     <h1>Consulta de Outages</h1>
+
+    <div>
+        <label for="fileInput">Carregar planilha (CSV):</label>
+        <input type="file" id="fileInput" />
+    </div>
 
     <div>
         <label for="matricula">Matrícula:</label>
@@ -37,7 +46,7 @@
     <div id="resumo"></div>
     <div id="tempoMedio"></div>
 
-    <table id="tabelaResultados">
+    <table id="tabelaResultados" class="hidden">
         <thead>
             <tr>
                 <th>ID</th>
@@ -50,28 +59,34 @@
     </table>
 
     <script>
-        // Dados simulados da planilha
-        const dadosPlanilha = [
-            ['001', 'f160641', '01/03/2025 22:30', '01/03/2025 23:30', 1, 1, 1, 1],
-            ['002', 'f160641', '02/03/2025 00:30', '02/03/2025 02:30', 1, 0, 1, 1],
-            ['003', 'f160641', '03/03/2025 03:15', '03/03/2025 05:00', 1, 0, 0, 1],
-            // Mais linhas podem ser adicionadas aqui
-        ];
+        let dadosPlanilha = [];
+
+        // Função para ler o arquivo CSV e armazenar os dados
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const text = e.target.result;
+                dadosPlanilha = parseCSV(text);
+                alert("Planilha carregada com sucesso!");
+            };
+            reader.readAsText(file);
+        }
+
+        // Função para parsear o CSV
+        function parseCSV(text) {
+            const linhas = text.split('\n');
+            const dados = linhas.map(linha => linha.split(','));
+            return dados;
+        }
 
         // Função para parsear a data e hora
         function parseDate(dateStr) {
-            console.log("Data recebida para processamento:", dateStr); // Verificando o valor
-            if (typeof dateStr !== "string") {
-                console.log("Valor de dateStr inválido:", dateStr);
-                return null; // Caso inválido, retornamos null para evitar erro
-            }
-
             const [date, time] = dateStr.split(' ');
             const [day, month, year] = date.split('/');
             const [hours, minutes] = time.split(':');
-            
-            console.log(`Processando data: ${dateStr}`);
-            
             return new Date(year, month - 1, day, hours, minutes);
         }
 
@@ -83,6 +98,11 @@
                 return;
             }
 
+            if (dadosPlanilha.length === 0) {
+                alert("Nenhuma planilha carregada.");
+                return;
+            }
+
             let ganhos = [];
             let perdas = [];
             let tempos = [];
@@ -90,20 +110,17 @@
             console.log("Matrícula informada:", matricula);
 
             dadosPlanilha.forEach(row => {
-                console.log("Linha processada:", row);
-
                 // Ignorar caso não tenha dados suficientes na linha
                 if (!row[2] || !row[3]) {
-                    console.log("Data ou hora ausente na linha:", row);
                     return; // Ignora essa linha e continua o loop
                 }
 
                 // Comparar matrícula
                 if (row[1] && row[1].toString().toLowerCase() === matricula) {
-                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
-                    let perdaHFC = (row[4] === 1 && row[5] === 0);
-                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
-                    let perdaGPON = (row[6] === 1 && row[7] === 0);
+                    let ganhoHFC = (row[4] === '1' && row[5] === '1');
+                    let perdaHFC = (row[4] === '1' && row[5] === '0');
+                    let ganhoGPON = (row[6] === '1' && row[7] === '1');
+                    let perdaGPON = (row[6] === '1' && row[7] === '0');
 
                     // Processar datas
                     let inicio = parseDate(row[2]);
@@ -143,7 +160,13 @@
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = entry.tempo;
             });
+
+            // Exibir a tabela após a consulta
+            document.getElementById('tabelaResultados').classList.remove('hidden');
         }
+
+        // Associar a função ao evento de carregamento do arquivo
+        document.getElementById('fileInput').addEventListener('change', handleFile);
     </script>
 
 </body>
