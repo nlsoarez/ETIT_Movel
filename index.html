@@ -98,6 +98,24 @@
 
     <script>
         let dadosPlanilha = [];
+
+        // Mapeamento dos logins para os nomes
+        const loginsParaNomes = {
+            "N0238475": "MARLEY MARQUES RIBEIRO",
+            "N5923221": "KELLY PINHEIRO LIRA",
+            "F160641": "JENNIFER MARIA ANDRADE SANTOS",
+            "N5772086": "THIAGO PEREIRA DA SILVA",
+            "N0239871": "LEONARDO FERREIRA LIMA DE ALMEIDA",
+            "N5577565": "MARISTELLA MARCIA DOS SANTOS",
+            "N5737414": "SANDRO DA SILVA CARVALHO",
+            "N5972428": "CRISTIANE HERMOGENES DA SILVA",
+            "N6173055": "JEFFERSON LUIS GONÇALVES COITINHO",
+            "N5932090": "EVILÁZIO ANDRÉ DE MAGALHÃES GOMES PEREIRA",
+            "N0255801": "ELBERTON ANICETO HENRIQUE",
+            "N4014011": "ALAN MARINHO DIAS",
+            "N5923996": "JULIO CESAR SANTOS SOARES"
+        };
+
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -119,6 +137,13 @@
                 return;
             }
 
+            // Verifica se o login existe no mapeamento
+            const nome = loginsParaNomes[matricula];
+            if (!nome) {
+                alert("Login não encontrado!");
+                return;
+            }
+
             let ganhos = [];
             let perdas = [];
 
@@ -134,7 +159,7 @@
                 }
             });
 
-            document.getElementById('resumo').innerText = Ganhos: ${ganhos.length} | Perdas: ${perdas.length};
+            document.getElementById('resumo').innerText = `${nome} - Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
