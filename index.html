@@ -113,6 +113,9 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                // Depuração - Exibe os dados lidos da planilha
+                console.log(dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -133,22 +136,31 @@
             let totalGanhos = 0;
             let totalPerdas = 0;
 
+            // Verificando os dados da planilha
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula) {
-                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
-                    let perdaHFC = (row[2] === 1 && row[3] === 0);
-                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
-                    let perdaGPON = (row[4] === 1 && row[5] === 0);
+                console.log(row); // Exibe cada linha para verificar o conteúdo
 
-                    let tempo = row[5]; // Tempo (coluna E)
+                // Supondo que a matrícula esteja na coluna 1, tipo na coluna 6 e o tempo na coluna 4
+                let tipo = row[6]; // Tipo: Ganho ou Perda
+                let inicio = row[2]; // Início
+                let fim = row[3]; // Fim
+                let tempo = row[4]; // Tempo (minutos)
 
-                    if (ganhoHFC || ganhoGPON) {
-                        ganhos.push(row[0]);
+                // Desconsiderando se "Fim" está vazio ou zero
+                if (!fim || fim === 0) {
+                    return; // Ignora essa linha se "Fim" estiver vazio ou zero
+                }
+
+                if (row[1] === matricula && tipo) {
+                    console.log(`Tipo: ${tipo}, Tempo: ${tempo}`); // Depuração
+
+                    // Verificar se é "Ganho" ou "Perda"
+                    if (tipo.toLowerCase() === "ganho") {
+                        ganhos.push(row[0]); // ID do outage
                         tempoGanhos += tempo;
                         totalGanhos++;
-                    }
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
+                    } else if (tipo.toLowerCase() === "perda") {
+                        perdas.push(row[0]); // ID do outage
                         tempoPerdas += tempo;
                         totalPerdas++;
                     }
