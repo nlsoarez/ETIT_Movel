@@ -75,7 +75,6 @@
 </head>
 <body>
     <div class="container">
-        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
         <h2>Painel ETIT Residencial</h2>
         <input type="file" id="upload" accept=".xlsx">
         <br>
@@ -114,22 +113,13 @@
         });
 
         function calcularTempo(inicio, fim) {
-            if (!inicio || !fim) return 0; // Ignora se "Inicio" ou "Fim" estiverem em branco
-
-            function horaParaMinutos(hora) {
-                const [h, m] = hora.split(':').map(Number);
-                return h * 60 + m;
-            }
-
-            const minutosInicio = horaParaMinutos(inicio);
-            const minutosFim = horaParaMinutos(fim);
-
-            let diferenca = minutosFim - minutosInicio;
-            if (diferenca < 0) {
-                diferenca += 1440; // Ajusta para virada do dia
-            }
-
-            return diferenca.toFixed(2);
+            if (!inicio || !fim) return 0;
+            const [h1, m1] = inicio.split(':').map(Number);
+            const [h2, m2] = fim.split(':').map(Number);
+            let minutosInicio = h1 * 60 + m1;
+            let minutosFim = h2 * 60 + m2;
+            if (minutosFim < minutosInicio) minutosFim += 1440;
+            return (minutosFim - minutosInicio).toFixed(2);
         }
 
         function consultarOutages() {
@@ -146,16 +136,18 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
-                    let ganho = row[4] === 1 && row[5] === 1;
-                    let perda = row[4] === 1 && row[5] === 0;
+                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
+                    let perdaHFC = (row[4] === 1 && row[5] === 0);
+                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
+                    let perdaGPON = (row[6] === 1 && row[7] === 0);
 
                     if (row[3]) {
                         let tempo = calcularTempo(row[2], row[3]);
-                        if (ganho) {
+                        if (ganhoHFC || ganhoGPON) {
                             ganhos.push(row[0]);
                             temposGanhos.push(tempo);
                         }
-                        if (perda) {
+                        if (perdaHFC || perdaGPON) {
                             perdas.push(row[0]);
                             temposPerdas.push(tempo);
                         }
@@ -163,8 +155,8 @@
                 }
             });
 
-            const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / ganhos.length || 0).toFixed(2);
-            const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / perdas.length || 0).toFixed(2);
+            const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (ganhos.length || 1)).toFixed(2);
+            const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (perdas.length || 1)).toFixed(2);
 
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedioPerdas} minutos`;
 
@@ -184,6 +176,12 @@
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = temposPerdas[index];
             });
+        }
+
+        function limparConsulta() {
+            document.getElementById('matricula').value = "";
+            document.getElementById('resumo').innerText = "";
+            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
 </body>
