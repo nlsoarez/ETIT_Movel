@@ -87,8 +87,6 @@
         <p id="resumo"></p>
         <p id="perdasHorarios"></p>
         <p id="tempoMedio"></p>
-        <p id="tempoGanhoMedio"></p>
-        <p id="tempoPerdaMedio"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
@@ -132,8 +130,6 @@
             let perdasTotal = 0;
             let tempoGanhoTotal = 0;
             let tempoPerdaTotal = 0;
-            let ganhosContados = 0;
-            let perdasContadas = 0;
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
@@ -147,14 +143,12 @@
                     let perdaGPON = (row[4] === 1 && row[5] === 0);
 
                     if (ganhoHFC || ganhoGPON) {
-                        ganhos.push(row[0]);
-                        tempoGanhoTotal += tempo;
-                        ganhosContados++;
+                        ganhos.push({ id: row[0], tempo: tempo });
+                        tempoGanhoTotal += tempo; // Acumulando tempo dos ganhos
                     }
                     if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-                        tempoPerdaTotal += tempo;
-                        perdasContadas++;
+                        perdas.push({ id: row[0], tempo: tempo });
+                        tempoPerdaTotal += tempo; // Acumulando tempo das perdas
 
                         // Registrando perdas por horário
                         let hora = new Date(row[2]).getHours();
@@ -176,15 +170,13 @@
 
             // Calculando tempo médio
             let tempoMedio = numOutages > 0 ? (tempoTotal / numOutages).toFixed(2) : 0;
-            document.getElementById('tempoMedio').innerText = `Tempo Médio Total: ${tempoMedio} minutos`;
+            document.getElementById('tempoMedio').innerText = `Tempo Médio: ${tempoMedio} minutos`;
 
-            // Calculando tempo médio de ganho
-            let tempoGanhoMedio = ganhosContados > 0 ? (tempoGanhoTotal / ganhosContados).toFixed(2) : 0;
-            document.getElementById('tempoGanhoMedio').innerText = `Tempo Médio de Ganho: ${tempoGanhoMedio} minutos`;
+            // Calculando tempo médio de ganho e perda
+            let tempoMedioGanho = ganhos.length > 0 ? (tempoGanhoTotal / ganhos.length).toFixed(2) : 0;
+            let tempoMedioPerda = perdas.length > 0 ? (tempoPerdaTotal / perdas.length).toFixed(2) : 0;
 
-            // Calculando tempo médio de perda
-            let tempoPerdaMedio = perdasContadas > 0 ? (tempoPerdaTotal / perdasContadas).toFixed(2) : 0;
-            document.getElementById('tempoPerdaMedio').innerText = `Tempo Médio de Perda: ${tempoPerdaMedio} minutos`;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio de Ganho: ${tempoMedioGanho} minutos | Tempo Médio de Perda: ${tempoMedioPerda} minutos`;
 
             // Exibindo perdas por horário
             let perdasHorariosTexto = "Perdas por horário:\n";
@@ -192,9 +184,6 @@
                 perdasHorariosTexto += `Hora ${hora}: ${perdasPorHorario[hora]} perdas\n`;
             }
             document.getElementById('perdasHorarios').innerText = perdasHorariosTexto;
-
-            // Exibindo resumo
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
         }
 
         function limparConsulta() {
@@ -202,8 +191,6 @@
             document.getElementById('resumo').innerText = "";
             document.getElementById('perdasHorarios').innerText = "";
             document.getElementById('tempoMedio').innerText = "";
-            document.getElementById('tempoGanhoMedio').innerText = "";
-            document.getElementById('tempoPerdaMedio').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
