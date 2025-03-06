@@ -166,11 +166,11 @@
 
                     // Verificar se é "Ganho" ou "Perda"
                     if (tipo === "ganho") {
-                        ganhos.push(row[0]); // ID do outage
+                        ganhos.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
                         tempoGanhos += tempo;
                         totalGanhos++;
                     } else if (tipo === "perda") {
-                        perdas.push(row[0]); // ID do outage
+                        perdas.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
                         tempoPerdas += tempo;
                         totalPerdas++;
                     }
@@ -190,21 +190,24 @@
             document.getElementById('mediaPerdas').innerText = `Média Perdas: ${mediaPerdas.toFixed(2)} minutos`;
             document.getElementById('mediaTotal').innerText = `Média Total: ${mediaTotal.toFixed(2)} minutos`;
 
+            // Limpar tabela antes de adicionar novos resultados
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            ganhos.forEach(id => {
+            // Inserir os resultados de Ganhos
+            ganhos.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = tempoGanhos;
+                row.insertCell(2).innerText = item.tempo;
             });
 
-            perdas.forEach(id => {
+            // Inserir os resultados de Perdas
+            perdas.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = tempoPerdas;
+                row.insertCell(2).innerText = item.tempo;
             });
         }
 
