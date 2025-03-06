@@ -180,10 +180,16 @@
                 }
             });
 
+            // Calcular a média de ganhos
             const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (ganhos.length || 1)).toFixed(2);
+
+            // Calcular a média de perdas
             const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (perdas.length || 1)).toFixed(2);
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedioPerdas} minutos`;
+            // Calcular a média total (para o analista)
+            const tempoMedioTotal = (temposTotais[matricula]?.totalTempo / temposTotais[matricula]?.contador || 0).toFixed(2);
+
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio de Ganhos: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio de Perdas: ${tempoMedioPerdas} minutos | Tempo Médio Total: ${tempoMedioTotal} minutos`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
@@ -193,10 +199,7 @@
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
                 row.insertCell(2).innerText = temposGanhos[index];
-
-                // Adiciona a média para o analista
-                let media = temposTotais[matricula] ? (temposTotais[matricula].totalTempo / temposTotais[matricula].contador).toFixed(2) : "N/A";
-                row.insertCell(3).innerText = media;
+                row.insertCell(3).innerText = tempoMedioTotal;
             });
 
             perdas.forEach((id, index) => {
@@ -204,10 +207,7 @@
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = temposPerdas[index];
-
-                // Adiciona a média para o analista
-                let media = temposTotais[matricula] ? (temposTotais[matricula].totalTempo / temposTotais[matricula].contador).toFixed(2) : "N/A";
-                row.insertCell(3).innerText = media;
+                row.insertCell(3).innerText = tempoMedioTotal;
             });
         }
 
