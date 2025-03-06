@@ -115,10 +115,21 @@
 
         function calcularTempo(inicio, fim) {
             if (!inicio || !fim) return 0; // Ignora se "Inicio" ou "Fim" estiverem em branco
-            const inicioDate = new Date(inicio);
-            const fimDate = new Date(fim);
-            if (isNaN(inicioDate) || isNaN(fimDate)) return 0; // Ignora se as datas forem inválidas
-            return ((fimDate - inicioDate) / (1000 * 60)).toFixed(2); // Tempo em minutos
+
+            function horaParaMinutos(hora) {
+                const [h, m] = hora.split(':').map(Number);
+                return h * 60 + m;
+            }
+
+            const minutosInicio = horaParaMinutos(inicio);
+            const minutosFim = horaParaMinutos(fim);
+
+            let diferenca = minutosFim - minutosInicio;
+            if (diferenca < 0) {
+                diferenca += 1440; // Ajusta para virada do dia
+            }
+
+            return diferenca.toFixed(2);
         }
 
         function consultarOutages() {
@@ -135,20 +146,18 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
-                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
-                    let perdaHFC = (row[4] === 1 && row[5] === 0);
-                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
-                    let perdaGPON = (row[6] === 1 && row[7] === 0);
+                    let ganho = row[4] === 1 && row[5] === 1;
+                    let perda = row[4] === 1 && row[5] === 0;
 
-                    // Verifica se "Fim" não está em branco antes de calcular o tempo
                     if (row[3]) {
-                        if (ganhoHFC || ganhoGPON) {
+                        let tempo = calcularTempo(row[2], row[3]);
+                        if (ganho) {
                             ganhos.push(row[0]);
-                            temposGanhos.push(calcularTempo(row[2], row[3]));
+                            temposGanhos.push(tempo);
                         }
-                        if (perdaHFC || perdaGPON) {
+                        if (perda) {
                             perdas.push(row[0]);
-                            temposPerdas.push(calcularTempo(row[2], row[3]));
+                            temposPerdas.push(tempo);
                         }
                     }
                 }
@@ -175,12 +184,6 @@
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = temposPerdas[index];
             });
-        }
-
-        function limparConsulta() {
-            document.getElementById('matricula').value = "";
-            document.getElementById('resumo').innerText = "";
-            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
 </body>
