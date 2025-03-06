@@ -116,12 +116,6 @@
         function calcularTempo(inicio, fim) {
             if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
 
-            // Verifica se as variáveis são do tipo string
-            if (typeof inicio !== 'string' || typeof fim !== 'string') {
-                console.error('Os valores de inicio e fim devem ser strings.');
-                return 0;
-            }
-
             // Converte o formato "DD/MM/YYYY HH:MM:SS" para "YYYY-MM-DDTHH:MM:SS" para fácil manipulação
             let inicioDate = new Date(inicio.split(" ")[0].split("/").reverse().join("-") + "T" + inicio.split(" ")[1]);
             let fimDate = new Date(fim.split(" ")[0].split("/").reverse().join("-") + "T" + fim.split(" ")[1]);
@@ -152,22 +146,26 @@
             let temposTotais = {}; // Armazenará os tempos por analista
 
             dadosPlanilha.forEach(row => {
-                console.log(row);  // Verifique o conteúdo de cada linha da planilha
+                // Verifique o conteúdo de cada linha da planilha
                 if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
                     let ganhoHFC = (row[4] === 1 && row[5] === 1);
                     let perdaHFC = (row[4] === 1 && row[5] === 0);
                     let ganhoGPON = (row[6] === 1 && row[7] === 1);
                     let perdaGPON = (row[6] === 1 && row[7] === 0);
 
+                    // Verifica se o campo de tempo de início e fim não está vazio
                     if (row[3]) {
                         let tempo = calcularTempo(row[2], row[3]);
+
+                        // Agora, identificamos corretamente as condições para ganho e perda
                         if (ganhoHFC || ganhoGPON) {
-                            ganhos.push(row[0]);
-                            temposGanhos.push(tempo);
+                            ganhos.push(row[0]); // Armazenamos o ID do outage de ganho
+                            temposGanhos.push(tempo); // Calculamos e armazenamos o tempo de ganho
                         }
+
                         if (perdaHFC || perdaGPON) {
-                            perdas.push(row[0]);
-                            temposPerdas.push(tempo);
+                            perdas.push(row[0]); // Armazenamos o ID do outage de perda
+                            temposPerdas.push(tempo); // Calculamos e armazenamos o tempo de perda
                         }
 
                         // Atualizando os tempos totais para cada analista
@@ -189,11 +187,13 @@
             // Calcular a média total (para o analista)
             const tempoMedioTotal = (temposTotais[matricula]?.totalTempo / temposTotais[matricula]?.contador || 0).toFixed(2);
 
+            // Exibir resumo
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio de Ganhos: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio de Perdas: ${tempoMedioPerdas} minutos | Tempo Médio Total: ${tempoMedioTotal} minutos`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
+            // Adiciona os eventos de ganhos à tabela
             ganhos.forEach((id, index) => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
@@ -202,6 +202,7 @@
                 row.insertCell(3).innerText = tempoMedioTotal;
             });
 
+            // Adiciona os eventos de perdas à tabela
             perdas.forEach((id, index) => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
