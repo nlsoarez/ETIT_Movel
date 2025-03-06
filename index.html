@@ -17,11 +17,11 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             margin: auto;
         }
         .logo {
-            width: 100px;
+            width: 100px; /* Diminuiu o tamanho da logo */
             margin-bottom: 15px;
         }
         h2 {
@@ -34,7 +34,7 @@
             border-radius: 5px;
         }
         button {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho Claro */
             color: white;
             border: none;
             cursor: pointer;
@@ -54,18 +54,18 @@
             text-align: center;
         }
         th {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho */
             color: white;
         }
         .ganho {
-            background-color: #28a745;
+            background-color: #28a745; /* Verde */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             font-weight: bold;
         }
         .perda {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Vermelho Vivo */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
@@ -75,6 +75,7 @@
 </head>
 <body>
     <div class="container">
+        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
         <h2>Painel ETIT Residencial</h2>
         <input type="file" id="upload" accept=".xlsx">
         <br>
@@ -89,8 +90,6 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (Minutos)</th>
-                    <th>Média (Minutos)</th> <!-- Nova coluna -->
                 </tr>
             </thead>
             <tbody></tbody>
@@ -113,27 +112,8 @@
             reader.readAsArrayBuffer(file);
         });
 
-        function calcularTempo(inicio, fim) {
-            if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
-
-            // Converte o formato "DD/MM/YYYY HH:MM:SS" para "YYYY-MM-DDTHH:MM:SS" para fácil manipulação
-            let inicioDate = new Date(inicio.split(" ")[0].split("/").reverse().join("-") + "T" + inicio.split(" ")[1]);
-            let fimDate = new Date(fim.split(" ")[0].split("/").reverse().join("-") + "T" + fim.split(" ")[1]);
-
-            // Verifica se a data de fim é antes da data de início, o que indica que virou o dia
-            if (fimDate < inicioDate) {
-                fimDate.setDate(fimDate.getDate() + 1); // Ajusta a data de fim para o próximo dia
-            }
-
-            // Calcula a diferença em milissegundos
-            let diffMs = fimDate - inicioDate;
-            let diffMinutos = (diffMs / 1000 / 60).toFixed(2); // Converte para minutos
-
-            return diffMinutos;
-        }
-
         function consultarOutages() {
-            const matricula = document.getElementById('matricula').value.trim();
+            const matricula = document.getElementById('matricula').value.trim().toLowerCase(); // Normaliza para minúsculo
             if (!matricula) {
                 alert("Digite uma matrícula!");
                 return;
@@ -141,74 +121,70 @@
 
             let ganhos = [];
             let perdas = [];
-            let temposGanhos = [];
-            let temposPerdas = [];
-            let temposTotais = {}; // Armazenará os tempos por analista
+            let tempos = {}; // Para calcular tempo médio por login
+            let perdasPorHora = {}; // Para contar perdas por hora
 
             dadosPlanilha.forEach(row => {
-                // Verifique o conteúdo de cada linha da planilha
-                if (row[1] && row[1].toLowerCase() === matricula.toLowerCase()) {
+                const login = row[1].toString().toLowerCase(); // Normaliza para minúsculo
+                if (login === matricula) {
+                    // Converte as datas e calcula o tempo entre Início e Fim
+                    const inicio = new Date(row[2]);
+                    const fim = new Date(row[3]);
+                    const tempo = (fim - inicio) / 60000; // Calcula em minutos
+
+                    // Armazena o tempo por login
+                    if (!tempos[login]) tempos[login] = [];
+                    tempos[login].push(tempo);
+
+                    // Verifica se há perda ou ganho em HFC e GPON
                     let ganhoHFC = (row[4] === 1 && row[5] === 1);
                     let perdaHFC = (row[4] === 1 && row[5] === 0);
                     let ganhoGPON = (row[6] === 1 && row[7] === 1);
                     let perdaGPON = (row[6] === 1 && row[7] === 0);
 
-                    // Verifica se o campo de tempo de início e fim não está vazio
-                    if (row[3]) {
-                        let tempo = calcularTempo(row[2], row[3]);
+                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
+                    if (perdaHFC || perdaGPON) {
+                        perdas.push(row[0]);
 
-                        // Agora, identificamos corretamente as condições para ganho e perda
-                        if (ganhoHFC || ganhoGPON) {
-                            ganhos.push(row[0]); // Armazenamos o ID do outage de ganho
-                            temposGanhos.push(tempo); // Calculamos e armazenamos o tempo de ganho
-                        }
-
-                        if (perdaHFC || perdaGPON) {
-                            perdas.push(row[0]); // Armazenamos o ID do outage de perda
-                            temposPerdas.push(tempo); // Calculamos e armazenamos o tempo de perda
-                        }
-
-                        // Atualizando os tempos totais para cada analista
-                        if (!temposTotais[row[1]]) {
-                            temposTotais[row[1]] = { totalTempo: 0, contador: 0 };
-                        }
-                        temposTotais[row[1]].totalTempo += parseFloat(tempo);
-                        temposTotais[row[1]].contador++;
+                        // Conta as perdas por hora (considerando a hora do "Início")
+                        const horaInicio = inicio.getHours();
+                        if (!perdasPorHora[horaInicio]) perdasPorHora[horaInicio] = 0;
+                        perdasPorHora[horaInicio]++;
                     }
                 }
             });
 
-            // Calcular a média de ganhos
-            const tempoMedioGanhos = (temposGanhos.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (ganhos.length || 1)).toFixed(2);
+            // Calcula o tempo médio por login
+            let tempoMedio = 0;
+            if (tempos[matricula] && tempos[matricula].length > 0) {
+                tempoMedio = tempos[matricula].reduce((sum, time) => sum + time, 0) / tempos[matricula].length;
+            }
 
-            // Calcular a média de perdas
-            const tempoMedioPerdas = (temposPerdas.reduce((a, b) => parseFloat(a) + parseFloat(b), 0) / (perdas.length || 1)).toFixed(2);
+            // Encontra a hora com mais perdas
+            let horaMaxPerda = null;
+            let maxPerdas = 0;
+            for (let hora in perdasPorHora) {
+                if (perdasPorHora[hora] > maxPerdas) {
+                    maxPerdas = perdasPorHora[hora];
+                    horaMaxPerda = hora;
+                }
+            }
 
-            // Calcular a média total (para o analista)
-            const tempoMedioTotal = (temposTotais[matricula]?.totalTempo / temposTotais[matricula]?.contador || 0).toFixed(2);
-
-            // Exibir resumo
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Tempo Médio de Ganhos: ${tempoMedioGanhos} minutos | Perdas: ${perdas.length} | Tempo Médio de Perdas: ${tempoMedioPerdas} minutos | Tempo Médio Total: ${tempoMedioTotal} minutos`;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo médio: ${tempoMedio.toFixed(2)} minutos | Hora com mais perdas: ${horaMaxPerda}:00 (Perdas: ${maxPerdas})`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            // Adiciona os eventos de ganhos à tabela
-            ganhos.forEach((id, index) => {
+            ganhos.forEach(id => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = temposGanhos[index];
-                row.insertCell(3).innerText = tempoMedioTotal;
             });
 
-            // Adiciona os eventos de perdas à tabela
-            perdas.forEach((id, index) => {
+            perdas.forEach(id => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = temposPerdas[index];
-                row.insertCell(3).innerText = tempoMedioTotal;
             });
         }
 
