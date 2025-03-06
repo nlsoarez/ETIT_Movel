@@ -90,30 +90,13 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
+                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <h3>Tempo Médio por Login:</h3>
-        <table id="tabelaTempoMedio">
-            <thead>
-                <tr>
-                    <th>Login</th>
-                    <th>Tempo Médio (minutos)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <h3>Horários com Mais Perdas:</h3>
-        <table id="tabelaHorariosPerdas">
-            <thead>
-                <tr>
-                    <th>Hora</th>
-                    <th>Total de Perdas</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+        <h3>Resumo por Login:</h3>
+        <p id="resumoLogin"></p>
     </div>
 
     <script>
@@ -128,8 +111,6 @@
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                 alert("Planilha carregada com sucesso!");
-                calcularTempoMedio();
-                calcularHorariosPerdas();
             };
             reader.readAsArrayBuffer(file);
         });
@@ -143,93 +124,66 @@
 
             let ganhos = [];
             let perdas = [];
+            let tempoTotalGanhos = 0;
+            let tempoTotalPerdas = 0;
 
             dadosPlanilha.forEach(row => {
                 if (row[1] && row[1].toUpperCase() === matricula) {
-                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
-                    let perdaHFC = (row[4] === 1 && row[5] === 0);
-                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
-                    let perdaGPON = (row[6] === 1 && row[7] === 0);
+                    const inicio = new Date(row[2]);
+                    const fim = new Date(row[3]);
+                    if (!isNaN(inicio) && !isNaN(fim)) {
+                        const duracao = (fim - inicio) / (1000 * 60); // Duração em minutos
 
-                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
-                }
-            });
+                        let ganhoHFC = (row[4] === 1 && row[5] === 1);
+                        let perdaHFC = (row[4] === 1 && row[5] === 0);
+                        let ganhoGPON = (row[6] === 1 && row[7] === 1);
+                        let perdaGPON = (row[6] === 1 && row[7] === 0);
 
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-            tabela.innerHTML = "";
-
-            ganhos.forEach(id => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
-                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-            });
-
-            perdas.forEach(id => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
-                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-            });
-        }
-
-        function calcularTempoMedio() {
-            const dados = dadosPlanilha.slice(1); // Ignorar cabeçalho
-            const logins = {};
-
-            dados.forEach(row => {
-                const login = row[1].toUpperCase();
-                const inicio = new Date(row[2]);
-                const fim = new Date(row[3]);
-                if (!isNaN(inicio) && !isNaN(fim)) {
-                    const duracao = (fim - inicio) / (1000 * 60); // Duração em minutos
-                    if (!logins[login]) logins[login] = { total: 0, count: 0 };
-                    logins[login].total += duracao;
-                    logins[login].count += 1;
-                }
-            });
-
-            const tabela = document.getElementById('tabelaTempoMedio').getElementsByTagName('tbody')[0];
-            tabela.innerHTML = "";
-
-            for (const [login, data] of Object.entries(logins)) {
-                const tempoMedio = (data.total / data.count).toFixed(2);
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = login;
-                row.insertCell(1).innerText = tempoMedio;
-            }
-        }
-
-        function calcularHorariosPerdas() {
-            const dados = dadosPlanilha.slice(1); // Ignorar cabeçalho
-            const horarios = {};
-
-            dados.forEach(row => {
-                const inicio = new Date(row[2]);
-                if (!isNaN(inicio)) {
-                    const hora = inicio.getHours();
-                    const perdaHFC = (row[4] === 1 && row[5] === 0);
-                    const perdaGPON = (row[6] === 1 && row[7] === 0);
-                    if (perdaHFC || perdaGPON) {
-                        if (!horarios[hora]) horarios[hora] = 0;
-                        horarios[hora] += 1;
+                        if (ganhoHFC || ganhoGPON) {
+                            ganhos.push({ id: row[0], duracao });
+                            tempoTotalGanhos += duracao;
+                        }
+                        if (perdaHFC || perdaGPON) {
+                            perdas.push({ id: row[0], duracao });
+                            tempoTotalPerdas += duracao;
+                        }
                     }
                 }
             });
 
-            const tabela = document.getElementById('tabelaHorariosPerdas').getElementsByTagName('tbody')[0];
+            const tempoMedioGanhos = ganhos.length > 0 ? (tempoTotalGanhos / ganhos.length).toFixed(2) : 0;
+            const tempoMedioPerdas = perdas.length > 0 ? (tempoTotalPerdas / perdas.length).toFixed(2) : 0;
+            const tempoMedioTotal = ((tempoTotalGanhos + tempoTotalPerdas) / (ganhos.length + perdas.length)).toFixed(2);
+
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            document.getElementById('resumoLogin').innerText = `
+                Ganhos: ${ganhos.length} | Tempo Médio Ganhos: ${tempoMedioGanhos} minutos
+                Perdas: ${perdas.length} | Tempo Médio Perdas: ${tempoMedioPerdas} minutos
+                Tempo Médio Total: ${tempoMedioTotal} minutos
+            `;
+
+            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            for (const [hora, total] of Object.entries(horarios)) {
+            ganhos.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = hora;
-                row.insertCell(1).innerText = total;
-            }
+                row.insertCell(0).innerText = item.id;
+                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+                row.insertCell(2).innerText = item.duracao.toFixed(2);
+            });
+
+            perdas.forEach(item => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = item.id;
+                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+                row.insertCell(2).innerText = item.duracao.toFixed(2);
+            });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
+            document.getElementById('resumoLogin').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
