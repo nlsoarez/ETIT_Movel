@@ -115,24 +115,20 @@
         function calcularTempo(inicio, fim) {
             if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
 
-            // Verifica se 'inicio' e 'fim' são strings válidas
-            if (typeof inicio !== 'string' || typeof fim !== 'string') return 0;
+            // Converte o formato "DD/MM/YYYY HH:MM:SS" para "YYYY-MM-DDTHH:MM:SS" para fácil manipulação
+            let inicioDate = new Date(inicio.split(" ")[0].split("/").reverse().join("-") + "T" + inicio.split(" ")[1]);
+            let fimDate = new Date(fim.split(" ")[0].split("/").reverse().join("-") + "T" + fim.split(" ")[1]);
 
-            // Transforma "HH:MM:SS" em horas, minutos e segundos
-            let [horaInicio, minutoInicio, segundoInicio] = inicio.split(":").map(Number);
-            let [horaFim, minutoFim, segundoFim] = fim.split(":").map(Number);
-
-            // Converte para segundos totais desde 00:00
-            let segundosInicio = horaInicio * 3600 + minutoInicio * 60 + segundoInicio;
-            let segundosFim = horaFim * 3600 + minutoFim * 60 + segundoFim;
-
-            // Se o tempo final for menor, significa que virou o dia
-            if (segundosFim < segundosInicio) {
-                segundosFim += 24 * 3600; // Adiciona 24 horas para manter o cálculo correto
+            // Verifica se a data de fim é antes da data de início, o que indica que virou o dia
+            if (fimDate < inicioDate) {
+                fimDate.setDate(fimDate.getDate() + 1); // Ajusta a data de fim para o próximo dia
             }
 
-            // Calcula a diferença e converte para minutos
-            return ((segundosFim - segundosInicio) / 60).toFixed(2);
+            // Calcula a diferença em milissegundos
+            let diffMs = fimDate - inicioDate;
+            let diffMinutos = (diffMs / 1000 / 60).toFixed(2); // Converte para minutos
+
+            return diffMinutos;
         }
 
         function consultarOutages() {
