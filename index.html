@@ -17,12 +17,12 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             margin: auto;
         }
         .logo {
             width: 100px; /* Diminuiu o tamanho da logo */
-            margin-bottom: 15px;
+            15px;
         }
         h2 {
             color: #333;
@@ -85,14 +85,11 @@
         <br>
         <h3>Resultados:</h3>
         <p id="resumo"></p>
-        <p id="perdasHorarios"></p>
-        <p id="tempoMedio"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -124,64 +121,39 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempoTotal = 0;
-            let numOutages = 0;
-            let perdasPorHorario = {};
-            let perdasTotal = 0;
 
             dadosPlanilha.forEach(row => {
-                if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
-                    let tempo = (new Date(row[3]) - new Date(row[2])) / 60000; // tempo em minutos
-                    tempoTotal += tempo;
-                    numOutages++;
-
+                if (row[1] === matricula) {
                     let ganhoHFC = (row[2] === 1 && row[3] === 1);
                     let perdaHFC = (row[2] === 1 && row[3] === 0);
                     let ganhoGPON = (row[4] === 1 && row[5] === 1);
                     let perdaGPON = (row[4] === 1 && row[5] === 0);
 
                     if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-
-                        // Registrando perdas por horário
-                        let hora = new Date(row[2]).getHours();
-                        if (!perdasPorHorario[hora]) {
-                            perdasPorHorario[hora] = 0;
-                        }
-                        perdasPorHorario[hora]++;
-                        perdasTotal++;
-                    }
-
-                    // Adicionando linha na tabela
-                    let tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-                    let rowTabela = tabela.insertRow();
-                    rowTabela.insertCell(0).innerText = row[0];
-                    rowTabela.insertCell(1).innerHTML = (ganhoHFC || ganhoGPON) ? '<span class="ganho">Ganho</span>' : '<span class="perda">Perda</span>';
-                    rowTabela.insertCell(2).innerText = tempo.toFixed(2);
+                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
                 }
             });
 
-            // Calculando tempo médio
-            let tempoMedio = numOutages > 0 ? (tempoTotal / numOutages).toFixed(2) : 0;
-            document.getElementById('tempoMedio').innerText = `Tempo Médio: ${tempoMedio} minutos`;
-
-            // Exibindo perdas por horário
-            let perdasHorariosTexto = "Perdas por horário:\n";
-            for (let hora in perdasPorHorario) {
-                perdasHorariosTexto += `Hora ${hora}: ${perdasPorHorario[hora]} perdas\n`;
-            }
-            document.getElementById('perdasHorarios').innerText = perdasHorariosTexto;
-
-            // Exibindo resumo
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
+            tabela.innerHTML = "";
+
+            ganhos.forEach(id => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = id;
+                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+            });
+
+            perdas.forEach(id => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = id;
+                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+            });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
-            document.getElementById('perdasHorarios').innerText = "";
-            document.getElementById('tempoMedio').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
