@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consulta de Outages</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px; }
+        .container { background: #fff; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); max-width: 600px; margin: auto; }
+        .logo { width: 100px; margin-bottom: 15px; }
+        h2 { color: #333; }
+        input, button { padding: 10px; margin: 10px 5px; border: 1px solid #ccc; border-radius: 5px; }
+        button { background: #dc3545; color: white; border: none; cursor: pointer; font-weight: bold; }
+        button:hover { background: #b02a37; }
+        table { width: 100%; margin-top: 15px; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+        th { background: #dc3545; color: white; }
+        .ganho { background-color: #28a745; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+        .perda { background-color: #dc3545; color: white; padding: 5px 10px; border-radius: 5px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
+        <h2>Painel ETIT Residencial</h2>
+        <input type="file" id="upload" accept=".xlsx">
+        <br>
+        <input type="text" id="matricula" placeholder="Digite o Login">
+        <button onclick="consultarOutages()">Consultar</button>
+        <button onclick="limparConsulta()">Limpar</button>
+        <br>
+        <h3>Resultados:</h3>
+        <p id="resumo"></p>
+        <p id="tempoMedio"></p>
+        <table id="tabelaResultados">
+            <thead>
+                <tr>
+                    <th>ID Outage</th>
+                    <th>Tipo</th>
+                    <th>Tempo (min)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
+
+    <script>
+        let dadosPlanilha = [];
+        document.getElementById('upload').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                alert("Planilha carregada com sucesso!");
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        function consultarOutages() {
+            const matricula = document.getElementById('matricula').value.trim().toLowerCase();
+            if (!matricula) {
+                alert("Digite uma matrícula!");
+                return;
+            }
+
+            let ganhos = [];
+            let perdas = [];
+            let tempos = [];
+
+            dadosPlanilha.forEach(row => {
+                if (row[1] && row[1].toString().toLowerCase() === matricula) {
+                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
+                    let perdaHFC = (row[4] === 1 && row[5] === 0);
+                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
+                    let perdaGPON = (row[6] === 1 && row[7] === 0);
+                    
+                    if (row[2] && row[3]) {
+                        let inicio = new Date(row[2]);
+                        let fim = new Date(row[3]);
+                        let tempo = (fim - inicio) / 60000; // Tempo em minutos
+                        tempos.push(tempo);
+                    }
+                    
+                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempos.at(-1) || '-' });
+                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempos.at(-1) || '-' });
+                }
+            });
+
+            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : "-";
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            document.getElementById('tempoMedio').innerText = `Tempo médio: ${tempoMedio} minutos`;
+            
+            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
+            tabela.innerHTML = "";
+
+            ganhos.forEach(entry => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = entry.id;
+                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+                row.insertCell(2).innerText = entry.tempo;
+            });
+
+            perdas.forEach(entry => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = entry.id;
+                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+                row.insertCell(2).innerText = entry.tempo;
+            });
+        }
+
+        function limparConsulta() {
+            document.getElementById('matricula').value = "";
+            document.getElementById('resumo').innerText = "";
+            document.getElementById('tempoMedio').innerText = "";
+            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
+        }
+    </script>
+</body>
+</html>
