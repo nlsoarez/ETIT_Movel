@@ -80,8 +80,9 @@
                     let perdaGPON = (row[6] === 1 && row[7] === 0);
                     
                     if (row[2] && row[3]) {
-                        let inicio = new Date(row[2]);
-                        let fim = new Date(row[3]);
+                        // Corrigir formato da data para o formato esperado pelo JavaScript
+                        let inicio = formatDateToJSDate(row[2]);
+                        let fim = formatDateToJSDate(row[3]);
                         let tempo = (fim - inicio) / 60000; // Tempo em minutos
                         tempos.push(tempo);
                     }
@@ -111,6 +112,13 @@
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = entry.tempo;
             });
+        }
+
+        function formatDateToJSDate(dateString) {
+            const [date, time] = dateString.split(" ");
+            const [day, month, year] = date.split("/");
+            const [hours, minutes] = time.split(":");
+            return new Date(year, month - 1, day, hours, minutes); // Criar um objeto Date
         }
 
         function limparConsulta() {
