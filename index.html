@@ -115,6 +115,13 @@
             reader.readAsArrayBuffer(file);
         });
 
+        function parseDateTime(dateTimeStr) {
+            const [datePart, timePart] = dateTimeStr.split(' ');
+            const [day, month, year] = datePart.split('/');
+            const [hour, minute] = timePart.split(':');
+            return new Date(year, month - 1, day, hour, minute);
+        }
+
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim().toUpperCase();
             if (!matricula) {
@@ -129,8 +136,8 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] && row[1].toUpperCase() === matricula) {
-                    const inicio = new Date(row[2]);
-                    const fim = new Date(row[3]);
+                    const inicio = parseDateTime(row[2]);
+                    const fim = parseDateTime(row[3]);
                     if (!isNaN(inicio) && !isNaN(fim)) {
                         const duracao = (fim - inicio) / (1000 * 60); // Duração em minutos
 
