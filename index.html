@@ -21,7 +21,7 @@
             margin: auto;
         }
         .logo {
-            width: 100px;
+            width: 100px; /* Diminuiu o tamanho da logo */
             margin-bottom: 15px;
         }
         h2 {
@@ -34,7 +34,7 @@
             border-radius: 5px;
         }
         button {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho Claro */
             color: white;
             border: none;
             cursor: pointer;
@@ -54,18 +54,18 @@
             text-align: center;
         }
         th {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho */
             color: white;
         }
         .ganho {
-            background-color: #28a745;
+            background-color: #28a745; /* Verde */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             font-weight: bold;
         }
         .perda {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Vermelho Vivo */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
@@ -85,17 +85,20 @@
         <br>
         <h3>Resultados:</h3>
         <p id="resumo"></p>
+        <p id="perdasHorarios"></p>
+        <p id="tempoMedio"></p>
+        <p id="tempoGanhoMedio"></p>
+        <p id="tempoPerdaMedio"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (Horas)</th>
+                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <p id="mediaResumo"></p>
     </div>
 
     <script>
@@ -109,7 +112,6 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                console.log(dadosPlanilha); // Adicionado para depuração
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -124,13 +126,20 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempoGanhos = 0;
-            let tempoPerdas = 0;
+            let tempoTotal = 0;
+            let numOutages = 0;
+            let perdasPorHorario = {};
+            let perdasTotal = 0;
+            let tempoGanhoTotal = 0;
+            let tempoPerdaTotal = 0;
+            let ganhosContados = 0;
+            let perdasContadas = 0;
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
-                    console.log(row); // Adicionado para depuração
-                    let tempo = calcularTempo(row[2], row[3]);
+                    let tempo = (new Date(row[3]) - new Date(row[2])) / 60000; // tempo em minutos
+                    tempoTotal += tempo;
+                    numOutages++;
 
                     let ganhoHFC = (row[2] === 1 && row[3] === 1);
                     let perdaHFC = (row[2] === 1 && row[3] === 0);
@@ -138,54 +147,63 @@
                     let perdaGPON = (row[4] === 1 && row[5] === 0);
 
                     if (ganhoHFC || ganhoGPON) {
-                        ganhos.push({ id: row[0], tempo: tempo });
-                        tempoGanhos += tempo;
+                        ganhos.push(row[0]);
+                        tempoGanhoTotal += tempo;
+                        ganhosContados++;
                     }
                     if (perdaHFC || perdaGPON) {
-                        perdas.push({ id: row[0], tempo: tempo });
-                        tempoPerdas += tempo;
+                        perdas.push(row[0]);
+                        tempoPerdaTotal += tempo;
+                        perdasContadas++;
+
+                        // Registrando perdas por horário
+                        let hora = new Date(row[2]).getHours();
+                        if (!perdasPorHorario[hora]) {
+                            perdasPorHorario[hora] = 0;
+                        }
+                        perdasPorHorario[hora]++;
+                        perdasTotal++;
                     }
+
+                    // Adicionando linha na tabela
+                    let tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
+                    let rowTabela = tabela.insertRow();
+                    rowTabela.insertCell(0).innerText = row[0];
+                    rowTabela.insertCell(1).innerHTML = (ganhoHFC || ganhoGPON) ? '<span class="ganho">Ganho</span>' : '<span class="perda">Perda</span>';
+                    rowTabela.insertCell(2).innerText = tempo.toFixed(2);
                 }
             });
 
-            // Média de tempo
-            let mediaGanho = ganhos.length > 0 ? tempoGanhos / ganhos.length : 0;
-            let mediaPerda = perdas.length > 0 ? tempoPerdas / perdas.length : 0;
+            // Calculando tempo médio
+            let tempoMedio = numOutages > 0 ? (tempoTotal / numOutages).toFixed(2) : 0;
+            document.getElementById('tempoMedio').innerText = `Tempo Médio Total: ${tempoMedio} minutos`;
 
+            // Calculando tempo médio de ganho
+            let tempoGanhoMedio = ganhosContados > 0 ? (tempoGanhoTotal / ganhosContados).toFixed(2) : 0;
+            document.getElementById('tempoGanhoMedio').innerText = `Tempo Médio de Ganho: ${tempoGanhoMedio} minutos`;
+
+            // Calculando tempo médio de perda
+            let tempoPerdaMedio = perdasContadas > 0 ? (tempoPerdaTotal / perdasContadas).toFixed(2) : 0;
+            document.getElementById('tempoPerdaMedio').innerText = `Tempo Médio de Perda: ${tempoPerdaMedio} minutos`;
+
+            // Exibindo perdas por horário
+            let perdasHorariosTexto = "Perdas por horário:\n";
+            for (let hora in perdasPorHorario) {
+                perdasHorariosTexto += `Hora ${hora}: ${perdasPorHorario[hora]} perdas\n`;
+            }
+            document.getElementById('perdasHorarios').innerText = perdasHorariosTexto;
+
+            // Exibindo resumo
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            document.getElementById('mediaResumo').innerText = `Média de Tempo de Ganhos: ${mediaGanho.toFixed(2)} horas | Média de Tempo de Perdas: ${mediaPerda.toFixed(2)} horas`;
-
-            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-            tabela.innerHTML = "";
-
-            ganhos.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
-                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
-            });
-
-            perdas.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
-                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
-            });
-        }
-
-        function calcularTempo(inicio, fim) {
-            // Verifica se as datas estão válidas
-            if (!inicio || !fim) return 0;
-            let inicioDate = new Date(inicio);
-            let fimDate = new Date(fim);
-            let diff = fimDate - inicioDate;
-            return diff / (1000 * 60 * 60); // converte de milissegundos para horas
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
-            document.getElementById('mediaResumo').innerText = "";
+            document.getElementById('perdasHorarios').innerText = "";
+            document.getElementById('tempoMedio').innerText = "";
+            document.getElementById('tempoGanhoMedio').innerText = "";
+            document.getElementById('tempoPerdaMedio').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
