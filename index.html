@@ -90,6 +90,7 @@
                     <th>ID Outage</th>
                     <th>Tipo</th>
                     <th>Tempo (Minutos)</th>
+                    <th>Média (Minutos)</th> <!-- Nova coluna -->
                 </tr>
             </thead>
             <tbody></tbody>
@@ -148,6 +149,7 @@
             let perdas = [];
             let temposGanhos = [];
             let temposPerdas = [];
+            let temposTotais = {}; // Armazenará os tempos por analista
 
             dadosPlanilha.forEach(row => {
                 console.log(row);  // Verifique o conteúdo de cada linha da planilha
@@ -167,6 +169,13 @@
                             perdas.push(row[0]);
                             temposPerdas.push(tempo);
                         }
+
+                        // Atualizando os tempos totais para cada analista
+                        if (!temposTotais[row[1]]) {
+                            temposTotais[row[1]] = { totalTempo: 0, contador: 0 };
+                        }
+                        temposTotais[row[1]].totalTempo += parseFloat(tempo);
+                        temposTotais[row[1]].contador++;
                     }
                 }
             });
@@ -184,6 +193,10 @@
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
                 row.insertCell(2).innerText = temposGanhos[index];
+
+                // Adiciona a média para o analista
+                let media = temposTotais[matricula] ? (temposTotais[matricula].totalTempo / temposTotais[matricula].contador).toFixed(2) : "N/A";
+                row.insertCell(3).innerText = media;
             });
 
             perdas.forEach((id, index) => {
@@ -191,6 +204,10 @@
                 row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = temposPerdas[index];
+
+                // Adiciona a média para o analista
+                let media = temposTotais[matricula] ? (temposTotais[matricula].totalTempo / temposTotais[matricula].contador).toFixed(2) : "N/A";
+                row.insertCell(3).innerText = media;
             });
         }
 
