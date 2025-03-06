@@ -21,7 +21,7 @@
             margin: auto;
         }
         .logo {
-            width: 100px;
+            width: 100px; /* Diminuiu o tamanho da logo */
             margin-bottom: 15px;
         }
         h2 {
@@ -34,7 +34,7 @@
             border-radius: 5px;
         }
         button {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho Claro */
             color: white;
             border: none;
             cursor: pointer;
@@ -54,18 +54,18 @@
             text-align: center;
         }
         th {
-            background: #dc3545;
+            background: #dc3545; /* Vermelho */
             color: white;
         }
         .ganho {
-            background-color: #28a745;
+            background-color: #28a745; /* Verde */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             font-weight: bold;
         }
         .perda {
-            background-color: #dc3545;
+            background-color: #dc3545; /* Vermelho Vivo */
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
@@ -85,21 +85,17 @@
         <br>
         <h3>Resultados:</h3>
         <p id="resumo"></p>
+        <p id="mediaGanhos"></p>
+        <p id="mediaPerdas"></p>
         <table id="tabelaResultados">
             <thead>
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
-        <br>
-        <h4>Tempo Médio:</h4>
-        <p id="mediaGanhos"></p>
-        <p id="mediaPerdas"></p>
-        <p id="mediaTotal"></p>
     </div>
 
     <script>
@@ -113,9 +109,6 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                // Depuração - Exibe os dados lidos da planilha
-                console.log(dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -135,76 +128,47 @@
             let totalGanhos = 0;
             let totalPerdas = 0;
 
-            // Adicionar log para verificação
-            console.log("Iniciando a consulta para a matrícula:", matricula);
-
-            // Verificando os dados da planilha
             dadosPlanilha.forEach(row => {
-                console.log("Analisando linha:", row);
+                if (row[1] === matricula) {
+                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
+                    let perdaHFC = (row[2] === 1 && row[3] === 0);
+                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
+                    let perdaGPON = (row[4] === 1 && row[5] === 0);
 
-                let tipo = row[6]; // Tipo: Ganho ou Perda
-                let tempo = row[4]; // Tempo (minutos)
-
-                // Desconsiderando se "Tempo" estiver vazio ou zero
-                if (!tempo || tempo === 0) {
-                    console.log("Tempo vazio ou zero, ignorando linha.");
-                    return; // Ignora essa linha se "Tempo" estiver vazio ou zero
-                }
-
-                // Garantir que tipo seja uma string válida
-                tipo = (tipo || "").toString().toLowerCase();
-
-                // Adicionar log para verificar tipo e matrícula
-                console.log("Tipo:", tipo, "Matrícula na linha:", row[1]);
-
-                // Verificar se a matrícula corresponde e se tipo é válido
-                if (row[1] === matricula && tipo) {
-                    console.log(`Matrícula encontrada: ${row[1]}, Tipo: ${tipo}, Tempo: ${tempo}`);
-
-                    // Verificar se é "Ganho" ou "Perda"
-                    if (tipo === "ganho") {
-                        ganhos.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
-                        tempoGanhos += tempo;
+                    if (ganhoHFC || ganhoGPON) {
+                        ganhos.push(row[0]);
+                        tempoGanhos += parseFloat(row[4]); // Supondo que o tempo esteja na coluna 5
                         totalGanhos++;
-                    } else if (tipo === "perda") {
-                        perdas.push({ id: row[0], tempo: tempo }); // ID do outage e tempo
-                        tempoPerdas += tempo;
+                    }
+                    if (perdaHFC || perdaGPON) {
+                        perdas.push(row[0]);
+                        tempoPerdas += parseFloat(row[4]); // Supondo que o tempo esteja na coluna 5
                         totalPerdas++;
                     }
                 }
             });
 
-            // Adicionar log para verificação dos resultados
-            console.log("Ganhos:", ganhos, "Perdas:", perdas);
-
             // Calcular as médias
-            let mediaGanhos = totalGanhos > 0 ? tempoGanhos / totalGanhos : 0;
-            let mediaPerdas = totalPerdas > 0 ? tempoPerdas / totalPerdas : 0;
-            let mediaTotal = (totalGanhos + totalPerdas) > 0 ? (tempoGanhos + tempoPerdas) / (totalGanhos + totalPerdas) : 0;
+            let mediaGanhos = totalGanhos > 0 ? (tempoGanhos / totalGanhos).toFixed(2) : 0;
+            let mediaPerdas = totalPerdas > 0 ? (tempoPerdas / totalPerdas).toFixed(2) : 0;
 
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            document.getElementById('mediaGanhos').innerText = `Média Ganhos: ${mediaGanhos.toFixed(2)} minutos`;
-            document.getElementById('mediaPerdas').innerText = `Média Perdas: ${mediaPerdas.toFixed(2)} minutos`;
-            document.getElementById('mediaTotal').innerText = `Média Total: ${mediaTotal.toFixed(2)} minutos`;
+            document.getElementById('mediaGanhos').innerText = `Média de tempo dos ganhos: ${mediaGanhos} horas`;
+            document.getElementById('mediaPerdas').innerText = `Média de tempo das perdas: ${mediaPerdas} horas`;
 
-            // Limpar tabela antes de adicionar novos resultados
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            // Inserir os resultados de Ganhos
-            ganhos.forEach(item => {
+            ganhos.forEach(id => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.tempo;
             });
 
-            // Inserir os resultados de Perdas
-            perdas.forEach(item => {
+            perdas.forEach(id => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.tempo;
             });
         }
 
@@ -213,7 +177,6 @@
             document.getElementById('resumo').innerText = "";
             document.getElementById('mediaGanhos').innerText = "";
             document.getElementById('mediaPerdas').innerText = "";
-            document.getElementById('mediaTotal').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
