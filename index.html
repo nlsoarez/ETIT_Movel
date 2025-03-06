@@ -1,173 +1,237 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta de Outages</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        .ganho {
-            color: green;
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background-color: #f4f4f4;
+            padding: 20px;
         }
-
-        .perda {
-            color: red;
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            max-width: 800px;
+            margin: auto;
         }
-
-        table, th, td {
-            border: 1px solid black;
+        .logo {
+            width: 100px;
+            margin-bottom: 15px;
+        }
+        h2 {
+            color: #333;
+        }
+        input, button {
+            padding: 10px;
+            margin: 10px 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        button:hover {
+            background: #b02a37;
+        }
+        table {
+            width: 100%;
+            margin-top: 15px;
             border-collapse: collapse;
-            padding: 5px;
         }
-
+        th, td {
+            border: 1px solid #ddd;
+            padding: 10px;
+            text-align: center;
+        }
         th {
-            background-color: #f2f2f2;
+            background: #dc3545;
+            color: white;
         }
-
-        .hidden {
-            display: none;
+        .ganho {
+            background-color: #28a745;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .perda {
+            background-color: #dc3545;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-weight: bold;
         }
     </style>
 </head>
 <body>
-
-    <h1>Consulta de Outages</h1>
-
-    <div>
-        <label for="fileInput">Carregar planilha (CSV):</label>
-        <input type="file" id="fileInput" />
-    </div>
-
-    <div>
-        <label for="matricula">Matrícula:</label>
-        <input type="text" id="matricula" />
+    <div class="container">
+        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
+        <h2>Painel ETIT Residencial</h2>
+        <input type="file" id="upload" accept=".xlsx">
+        <br>
+        <input type="text" id="matricula" placeholder="Digite o Login">
         <button onclick="consultarOutages()">Consultar</button>
+        <button onclick="limparConsulta()">Limpar</button>
+        <br>
+        <h3>Resultados:</h3>
+        <p id="resumo"></p>
+        <table id="tabelaResultados">
+            <thead>
+                <tr>
+                    <th>ID Outage</th>
+                    <th>Tipo</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h3>Tempo Médio por Login:</h3>
+        <table id="tabelaTempoMedio">
+            <thead>
+                <tr>
+                    <th>Login</th>
+                    <th>Tempo Médio (minutos)</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+        <h3>Horários com Mais Perdas:</h3>
+        <table id="tabelaHorariosPerdas">
+            <thead>
+                <tr>
+                    <th>Hora</th>
+                    <th>Total de Perdas</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
-
-    <div id="resumo"></div>
-    <div id="tempoMedio"></div>
-
-    <table id="tabelaResultados" class="hidden">
-        <thead>
-            <tr>
-                <th>ID</th>
-                <th>Status</th>
-                <th>Tempo (minutos)</th>
-            </tr>
-        </thead>
-        <tbody>
-        </tbody>
-    </table>
 
     <script>
         let dadosPlanilha = [];
-
-        // Função para ler o arquivo CSV e armazenar os dados
-        function handleFile(event) {
+        document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
-            if (!file) return;
-
             const reader = new FileReader();
             reader.onload = function(e) {
-                const text = e.target.result;
-                dadosPlanilha = parseCSV(text);
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const sheetName = workbook.SheetNames[0];
+                const sheet = workbook.Sheets[sheetName];
+                dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                 alert("Planilha carregada com sucesso!");
+                calcularTempoMedio();
+                calcularHorariosPerdas();
             };
-            reader.readAsText(file);
-        }
+            reader.readAsArrayBuffer(file);
+        });
 
-        // Função para parsear o CSV
-        function parseCSV(text) {
-            const linhas = text.split('\n');
-            const dados = linhas.map(linha => linha.split(','));
-            return dados;
-        }
-
-        // Função para parsear a data e hora
-        function parseDate(dateStr) {
-            const [date, time] = dateStr.split(' ');
-            const [day, month, year] = date.split('/');
-            const [hours, minutes] = time.split(':');
-            return new Date(year, month - 1, day, hours, minutes);
-        }
-
-        // Função para consultar outages
         function consultarOutages() {
-            const matricula = document.getElementById('matricula').value.trim().toLowerCase();
+            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
             if (!matricula) {
                 alert("Digite uma matrícula!");
                 return;
             }
 
-            if (dadosPlanilha.length === 0) {
-                alert("Nenhuma planilha carregada.");
-                return;
-            }
-
             let ganhos = [];
             let perdas = [];
-            let tempos = [];
-
-            console.log("Matrícula informada:", matricula);
 
             dadosPlanilha.forEach(row => {
-                // Ignorar caso não tenha dados suficientes na linha
-                if (!row[2] || !row[3]) {
-                    return; // Ignora essa linha e continua o loop
-                }
+                if (row[1] && row[1].toUpperCase() === matricula) {
+                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
+                    let perdaHFC = (row[4] === 1 && row[5] === 0);
+                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
+                    let perdaGPON = (row[6] === 1 && row[7] === 0);
 
-                // Comparar matrícula, convertendo a matrícula da planilha para minúsculas
-                if (row[1] && row[1].toString().trim().toLowerCase() === matricula) {
-                    let ganhoHFC = (row[4] === '1' && row[5] === '1');
-                    let perdaHFC = (row[4] === '1' && row[5] === '0');
-                    let ganhoGPON = (row[6] === '1' && row[7] === '1');
-                    let perdaGPON = (row[6] === '1' && row[7] === '0');
-
-                    // Processar datas
-                    let inicio = parseDate(row[2]);
-                    let fim = parseDate(row[3]);
-                    
-                    if (inicio && fim) {
-                        let tempo = (fim - inicio) / 60000; // Tempo em minutos
-                        tempos.push(tempo);
-                    }
-
-                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempos.at(-1) || '-' });
-                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempos.at(-1) || '-' });
+                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
+                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
                 }
             });
 
-            if (ganhos.length === 0 && perdas.length === 0) {
-                alert("Nenhuma ocorrência encontrada para a matrícula informada.");
-            }
-
-            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : "-";
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            document.getElementById('tempoMedio').innerText = `Tempo médio: ${tempoMedio} minutos`;
-
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            ganhos.forEach(entry => {
+            ganhos.forEach(id => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = entry.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = entry.tempo;
             });
 
-            perdas.forEach(entry => {
+            perdas.forEach(id => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = entry.id;
+                row.insertCell(0).innerText = id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = entry.tempo;
             });
-
-            // Exibir a tabela após a consulta
-            document.getElementById('tabelaResultados').classList.remove('hidden');
         }
 
-        // Associar a função ao evento de carregamento do arquivo
-        document.getElementById('fileInput').addEventListener('change', handleFile);
-    </script>
+        function calcularTempoMedio() {
+            const dados = dadosPlanilha.slice(1); // Ignorar cabeçalho
+            const logins = {};
 
+            dados.forEach(row => {
+                const login = row[1].toUpperCase();
+                const inicio = new Date(row[2]);
+                const fim = new Date(row[3]);
+                if (!isNaN(inicio) && !isNaN(fim)) {
+                    const duracao = (fim - inicio) / (1000 * 60); // Duração em minutos
+                    if (!logins[login]) logins[login] = { total: 0, count: 0 };
+                    logins[login].total += duracao;
+                    logins[login].count += 1;
+                }
+            });
+
+            const tabela = document.getElementById('tabelaTempoMedio').getElementsByTagName('tbody')[0];
+            tabela.innerHTML = "";
+
+            for (const [login, data] of Object.entries(logins)) {
+                const tempoMedio = (data.total / data.count).toFixed(2);
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = login;
+                row.insertCell(1).innerText = tempoMedio;
+            }
+        }
+
+        function calcularHorariosPerdas() {
+            const dados = dadosPlanilha.slice(1); // Ignorar cabeçalho
+            const horarios = {};
+
+            dados.forEach(row => {
+                const inicio = new Date(row[2]);
+                if (!isNaN(inicio)) {
+                    const hora = inicio.getHours();
+                    const perdaHFC = (row[4] === 1 && row[5] === 0);
+                    const perdaGPON = (row[6] === 1 && row[7] === 0);
+                    if (perdaHFC || perdaGPON) {
+                        if (!horarios[hora]) horarios[hora] = 0;
+                        horarios[hora] += 1;
+                    }
+                }
+            });
+
+            const tabela = document.getElementById('tabelaHorariosPerdas').getElementsByTagName('tbody')[0];
+            tabela.innerHTML = "";
+
+            for (const [hora, total] of Object.entries(horarios)) {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = hora;
+                row.insertCell(1).innerText = total;
+            }
+        }
+
+        function limparConsulta() {
+            document.getElementById('matricula').value = "";
+            document.getElementById('resumo').innerText = "";
+            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
+        }
+    </script>
 </body>
 </html>
