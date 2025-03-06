@@ -17,11 +17,11 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
+            max-width: 800px;
             margin: auto;
         }
         .logo {
-            width: 100px; /* Diminuiu o tamanho da logo */
+            width: 100px;
             margin-bottom: 15px;
         }
         h2 {
@@ -34,7 +34,7 @@
             border-radius: 5px;
         }
         button {
-            background: #dc3545; /* Vermelho Claro */
+            background: #dc3545;
             color: white;
             border: none;
             cursor: pointer;
@@ -54,18 +54,18 @@
             text-align: center;
         }
         th {
-            background: #dc3545; /* Vermelho */
+            background: #dc3545;
             color: white;
         }
         .ganho {
-            background-color: #28a745; /* Verde */
+            background-color: #28a745;
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
             font-weight: bold;
         }
         .perda {
-            background-color: #dc3545; /* Vermelho Vivo */
+            background-color: #dc3545;
             color: white;
             padding: 5px 10px;
             border-radius: 5px;
@@ -95,6 +95,7 @@
             </thead>
             <tbody></tbody>
         </table>
+        <p id="mediaResumo"></p>
     </div>
 
     <script>
@@ -122,69 +123,66 @@
 
             let ganhos = [];
             let perdas = [];
-            let tempos = {};
-            let horariosPerdas = {};
+            let tempoGanhos = 0;
+            let tempoPerdas = 0;
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
-                    let tempo = calcularTempo(row[2], row[3]);  // Calculando o tempo em horas
-                    let horarioInicio = new Date(row[2]).getHours(); // Extraindo hora de início
+                    let tempo = calcularTempo(row[2], row[3]);
 
-                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
-                    let perdaHFC = (row[5] === 1 && row[6] === 0);
-                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
-                    let perdaGPON = (row[7] === 1 && row[8] === 0);
-
-                    if (!tempos[row[1]]) tempos[row[1]] = { total: 0, perdas: 0, ganhos: 0, count: 0 };
-                    tempos[row[1]].total += tempo;
-                    tempos[row[1]].count++;
+                    let ganhoHFC = (row[2] === 1 && row[3] === 1);
+                    let perdaHFC = (row[2] === 1 && row[3] === 0);
+                    let ganhoGPON = (row[4] === 1 && row[5] === 1);
+                    let perdaGPON = (row[4] === 1 && row[5] === 0);
 
                     if (ganhoHFC || ganhoGPON) {
-                        ganhos.push(row[0]);
-                        tempos[row[1]].ganhos++;
+                        ganhos.push({ id: row[0], tempo: tempo });
+                        tempoGanhos += tempo;
                     }
                     if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-                        tempos[row[1]].perdas++;
-                        if (!horariosPerdas[horarioInicio]) horariosPerdas[horarioInicio] = 0;
-                        horariosPerdas[horarioInicio]++;
+                        perdas.push({ id: row[0], tempo: tempo });
+                        tempoPerdas += tempo;
                     }
                 }
             });
 
-            let horarioMaisPerda = Object.keys(horariosPerdas).reduce((a, b) => horariosPerdas[a] > horariosPerdas[b] ? a : b);
+            // Média de tempo
+            let mediaGanho = ganhos.length > 0 ? tempoGanhos / ganhos.length : 0;
+            let mediaPerda = perdas.length > 0 ? tempoPerdas / perdas.length : 0;
 
-            let resumo = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Horário com mais perdas: ${horarioMaisPerda}h`;
-            document.getElementById('resumo').innerText = resumo;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
+            document.getElementById('mediaResumo').innerText = `Média de Tempo de Ganhos: ${mediaGanho.toFixed(2)} horas | Média de Tempo de Perdas: ${mediaPerda.toFixed(2)} horas`;
 
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            ganhos.forEach(id => {
+            ganhos.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = (tempos[matricula].total / tempos[matricula].count).toFixed(2);  // Tempo médio
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
 
-            perdas.forEach(id => {
+            perdas.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = (tempos[matricula].total / tempos[matricula].count).toFixed(2);  // Tempo médio
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
         }
 
         function calcularTempo(inicio, fim) {
-            const inicioDate = new Date(inicio);
-            const fimDate = new Date(fim);
-            const tempo = (fimDate - inicioDate) / (1000 * 60 * 60);  // Convertendo para horas
-            return tempo;
+            // Calcula o tempo em horas
+            let inicioDate = new Date(inicio);
+            let fimDate = new Date(fim);
+            let diff = fimDate - inicioDate;
+            return diff / (1000 * 60 * 60); // converte de milissegundos para horas
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
+            document.getElementById('mediaResumo').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
