@@ -114,10 +114,10 @@
         });
 
         function calcularTempo(inicio, fim) {
-            if (!inicio || !fim) return 0; // Verifica se as datas estão presentes
+            if (!inicio || !fim) return 0; // Ignora se "Inicio" ou "Fim" estiverem em branco
             const inicioDate = new Date(inicio);
             const fimDate = new Date(fim);
-            if (isNaN(inicioDate) || isNaN(fimDate)) return 0; // Verifica se as datas são válidas
+            if (isNaN(inicioDate) || isNaN(fimDate)) return 0; // Ignora se as datas forem inválidas
             return ((fimDate - inicioDate) / (1000 * 60)).toFixed(2); // Tempo em minutos
         }
 
@@ -140,13 +140,16 @@
                     let ganhoGPON = (row[6] === 1 && row[7] === 1);
                     let perdaGPON = (row[6] === 1 && row[7] === 0);
 
-                    if (ganhoHFC || ganhoGPON) {
-                        ganhos.push(row[0]);
-                        temposGanhos.push(calcularTempo(row[2], row[3]));
-                    }
-                    if (perdaHFC || perdaGPON) {
-                        perdas.push(row[0]);
-                        temposPerdas.push(calcularTempo(row[2], row[3]));
+                    // Verifica se "Fim" não está em branco antes de calcular o tempo
+                    if (row[3]) {
+                        if (ganhoHFC || ganhoGPON) {
+                            ganhos.push(row[0]);
+                            temposGanhos.push(calcularTempo(row[2], row[3]));
+                        }
+                        if (perdaHFC || perdaGPON) {
+                            perdas.push(row[0]);
+                            temposPerdas.push(calcularTempo(row[2], row[3]));
+                        }
                     }
                 }
             });
