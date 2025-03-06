@@ -47,6 +47,7 @@
 
     <script>
         let dadosPlanilha = [];
+        
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -60,6 +61,15 @@
             };
             reader.readAsArrayBuffer(file);
         });
+
+        function parseDate(dateStr) {
+            const [date, time] = dateStr.split(' ');
+            const [day, month, year] = date.split('/');
+            const [hours, minutes] = time.split(':');
+            
+            // Retorna um objeto Date no formato correto
+            return new Date(year, month - 1, day, hours, minutes);
+        }
 
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim().toLowerCase();
@@ -78,15 +88,15 @@
                     let perdaHFC = (row[4] === 1 && row[5] === 0);
                     let ganhoGPON = (row[6] === 1 && row[7] === 1);
                     let perdaGPON = (row[6] === 1 && row[7] === 0);
-                    
+
                     if (row[2] && row[3]) {
-                        // Corrigir formato da data para o formato esperado pelo JavaScript
-                        let inicio = formatDateToJSDate(row[2]);
-                        let fim = formatDateToJSDate(row[3]);
+                        // Usar a função parseDate para transformar as strings em objetos Date
+                        let inicio = parseDate(row[2]);
+                        let fim = parseDate(row[3]);
                         let tempo = (fim - inicio) / 60000; // Tempo em minutos
                         tempos.push(tempo);
                     }
-                    
+
                     if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempos.at(-1) || '-' });
                     if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempos.at(-1) || '-' });
                 }
@@ -112,13 +122,6 @@
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
                 row.insertCell(2).innerText = entry.tempo;
             });
-        }
-
-        function formatDateToJSDate(dateString) {
-            const [date, time] = dateString.split(" ");
-            const [day, month, year] = date.split("/");
-            const [hours, minutes] = time.split(":");
-            return new Date(year, month - 1, day, hours, minutes); // Criar um objeto Date
         }
 
         function limparConsulta() {
