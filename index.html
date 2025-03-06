@@ -114,8 +114,10 @@
         });
 
         function calcularTempo(inicio, fim) {
+            if (!inicio || !fim) return 0; // Verifica se as datas estão presentes
             const inicioDate = new Date(inicio);
             const fimDate = new Date(fim);
+            if (isNaN(inicioDate) || isNaN(fimDate)) return 0; // Verifica se as datas são válidas
             return ((fimDate - inicioDate) / (1000 * 3600)).toFixed(2); // Tempo em horas
         }
 
