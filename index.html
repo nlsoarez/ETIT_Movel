@@ -115,6 +115,12 @@
         function calcularTempo(inicio, fim) {
             if (!inicio || !fim) return 0; // Ignora se algum campo estiver em branco
 
+            // Verifica se as variáveis são do tipo string
+            if (typeof inicio !== 'string' || typeof fim !== 'string') {
+                console.error('Os valores de inicio e fim devem ser strings.');
+                return 0;
+            }
+
             // Converte o formato "DD/MM/YYYY HH:MM:SS" para "YYYY-MM-DDTHH:MM:SS" para fácil manipulação
             let inicioDate = new Date(inicio.split(" ")[0].split("/").reverse().join("-") + "T" + inicio.split(" ")[1]);
             let fimDate = new Date(fim.split(" ")[0].split("/").reverse().join("-") + "T" + fim.split(" ")[1]);
