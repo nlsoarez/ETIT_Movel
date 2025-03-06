@@ -109,6 +109,7 @@
                 const sheetName = workbook.SheetNames[0];
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                console.log(dadosPlanilha); // Adicionado para depuração
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -128,6 +129,7 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula && row[2] !== 0 && row[4] !== 0) {
+                    console.log(row); // Adicionado para depuração
                     let tempo = calcularTempo(row[2], row[3]);
 
                     let ganhoHFC = (row[2] === 1 && row[3] === 1);
@@ -172,7 +174,8 @@
         }
 
         function calcularTempo(inicio, fim) {
-            // Calcula o tempo em horas
+            // Verifica se as datas estão válidas
+            if (!inicio || !fim) return 0;
             let inicioDate = new Date(inicio);
             let fimDate = new Date(fim);
             let diff = fimDate - inicioDate;
