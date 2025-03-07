@@ -92,32 +92,16 @@
 
                 let ticket = row[0];  // Coluna A - Tickets (Outage)
                 let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
-                let inicio = row[2]; // Coluna C - Inicio
-                let fim = row[3]; // Coluna D - Fim
-                let hfcVolume = row[5]; // Coluna F - HFC - Volume
-                let hfcIndicador = row[6]; // Coluna G - HFC - Indicador
-                let gponVolume = row[7]; // Coluna H - GPON - Volume
-                let gponIndicador = row[8]; // Coluna I - GPON - Indicador
+                let tempo = row[4]; // Coluna E - Tempo de resposta
 
-                // Verifica se as colunas necessárias têm dados
-                if (hfcVolume === undefined || hfcIndicador === undefined || gponVolume === undefined || gponIndicador === undefined) {
-                    return;
-                }
+                // Ignorar caso o tempo não esteja preenchido
+                if (!tempo) return;
 
-                // Calcular tempo em horas (convertendo de hh:mm:ss para horas decimais)
-                let tempo = 0;
-                if (inicio && fim) {
-                    tempo = calcularTempoEmHoras(inicio, fim);
-                }
-
-                // Ignorar caso HFC ou GPON tenham volume 0
-                if (hfcVolume == 0 && gponVolume == 0) return;
-
-                // Definir ganho ou perda
+                // Definir ganho ou perda com base no tempo
                 let resultado = "";
-                if ((hfcVolume == 1 && hfcIndicador == 1) || (gponVolume == 1 && gponIndicador == 1)) {
+                if (tempo <= 4) {  // Dentro do SLA
                     resultado = "ganho";
-                } else if ((hfcVolume == 1 && hfcIndicador == 0) || (gponVolume == 1 && gponIndicador == 0)) {
+                } else {  // Fora do SLA
                     resultado = "perda";
                 }
 
@@ -147,25 +131,6 @@
             atualizarTabela("tabelaPerdas", perdas, "perda");
         }
 
-        // Função para calcular o tempo em horas a partir de hh:mm:ss
-        function calcularTempoEmHoras(inicio, fim) {
-            let inicioParts = inicio.split(":");
-            let fimParts = fim.split(":");
-
-            let inicioHora = parseInt(inicioParts[0]);
-            let inicioMinuto = parseInt(inicioParts[1]);
-            let inicioSegundo = parseInt(inicioParts[2]);
-
-            let fimHora = parseInt(fimParts[0]);
-            let fimMinuto = parseInt(fimParts[1]);
-            let fimSegundo = parseInt(fimParts[2]);
-
-            let inicioTotalMinutos = inicioHora * 60 + inicioMinuto + inicioSegundo / 60;
-            let fimTotalMinutos = fimHora * 60 + fimMinuto + fimSegundo / 60;
-
-            return (fimTotalMinutos - inicioTotalMinutos) / 60; // Retorna tempo em horas
-        }
-
         // Função para atualizar as tabelas de ganhos e perdas
         function atualizarTabela(idTabela, dados, classe) {
             const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
@@ -175,7 +140,7 @@
                 let cell1 = row.insertCell(0);
                 let cell2 = row.insertCell(1);
                 cell1.innerText = item[0]; // Ticket
-                cell2.innerText = item[1].toFixed(2); // Tempo com 2 casas decimais
+                cell2.innerText = item[1]; // Tempo
                 row.className = classe;
             });
         }
