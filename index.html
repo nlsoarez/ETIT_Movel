@@ -3,129 +3,203 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload de Planilha de Outages</title>
+    <title>Upload de Planilha e Cálculos de Outages</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #result, #consultation-result {
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        table, th, td {
+            border: 1px solid black;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>Upload de Planilha de Outages</h1>
 
-    <!-- Formulário para upload da planilha -->
-    <input type="file" id="fileInput" accept=".csv">
-    <button onclick="processFile()">Processar Planilha</button>
+<h1>Upload de Planilha e Análise de Outages</h1>
 
+<!-- Formulário para upload da planilha -->
+<input type="file" id="fileInput" accept=".csv">
+<button onclick="processFile()">Processar Planilha</button>
+
+<!-- Resultados do cálculo -->
+<div id="result">
     <h2>Resultados</h2>
-    
-    <div id="result"></div>
+    <p><strong>Tempo médio por login:</strong></p>
+    <table id="avgTimeTable"></table>
 
-    <h2>Consulta por Login</h2>
-    <input type="text" id="loginInput" placeholder="Digite o Login">
-    <button onclick="consultarPorLogin()">Consultar</button>
+    <p><strong>Outages Ganhos e Perdidos:</strong></p>
+    <table id="outagesTable"></table>
 
-    <div id="consultaResult"></div>
+    <p><strong>Horários com Mais Perdas:</strong></p>
+    <table id="lossTimesTable"></table>
+</div>
 
-    <script>
-        let planilhaData = []; // Para armazenar os dados processados da planilha
-        let tempos = {}; // Para armazenar os tempos médios por login
-        let perdasGanhos = {}; // Para armazenar perdas e ganhos por login
-        let horariosPerda = {}; // Para armazenar perdas e ganhos por horário
-        let outagesPorLogin = {}; // Para armazenar outages por login
+<!-- Consulta de outages por login -->
+<h2>Consulta de Outages por Login</h2>
+<input type="text" id="loginQuery" placeholder="Digite o Login">
+<button onclick="consultLogin()">Consultar</button>
 
-        // Função para processar o arquivo CSV
-        function processFile() {
-            const fileInput = document.getElementById("fileInput");
-            const file = fileInput.files[0];
-            if (!file) return alert("Por favor, faça o upload de uma planilha.");
+<div id="consultation-result">
+    <h3>Outages de Login</h3>
+    <table id="consultationTable"></table>
+</div>
 
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const content = event.target.result;
-                processCSV(content);
-            };
-            reader.readAsText(file);
-        }
+<script>
+    let data = [];
 
-        // Função para processar o conteúdo do CSV
-        function processCSV(content) {
-            const lines = content.split('\n').filter(line => line.trim() !== '');
-            planilhaData = lines.map(line => line.split(','));
+    function processFile() {
+        const file = document.getElementById('fileInput').files[0];
+        if (!file) return alert('Por favor, faça o upload de um arquivo.');
 
-            // Remover o cabeçalho
-            planilhaData.shift();
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const csv = event.target.result;
+            const rows = csv.split('\n');
+            data = [];
 
-            let resultado = '';
-            
-            // Iterar pelas linhas para calcular o tempo e identificar perdas/ganhos
-            planilhaData.forEach((row) => {
-                const [outage, login, inicio, fim, hfcVolume, hfcIndicador, gponVolume, gponIndicador] = row;
+            for (let i = 1; i < rows.length; i++) {
+                const columns = rows[i].split(',');
+                if (columns.length < 8) continue;
 
-                // Ignorar casos onde HFC Volume ou GPON Volume começam com 0
-                if (hfcVolume === '0' || gponVolume === '0') return;
+                const outage = columns[0];
+                const login = columns[1];
+                const inicio = new Date(columns[2]);
+                const fim = new Date(columns[3]);
+                const hfcVolume = parseInt(columns[4]);
+                const hfcIndicador = parseInt(columns[5]);
+                const gponVolume = parseInt(columns[6]);
+                const gponIndicador = parseInt(columns[7]);
 
-                // Calcular o tempo (coluna E)
-                const tempo = (new Date(fim) - new Date(inicio)) / 1000 / 60; // Tempo em minutos
+                const tempo = (fim - inicio) / 1000 / 60; // Tempo em minutos
 
-                // Calcular HFC e GPON (Ganho ou Perda)
-                const hfcStatus = hfcVolume === '1' && hfcIndicador === '1' ? 'Ganho' : 'Perda';
-                const gponStatus = gponVolume === '1' && gponIndicador === '1' ? 'Ganho' : 'Perda';
+                if ((hfcVolume === 0 || gponVolume === 0)) continue; // Desconsiderar volumes com 0
 
-                // Armazenar tempo médio por login
-                if (!tempos[login]) tempos[login] = { totalTempo: 0, count: 0 };
-                tempos[login].totalTempo += tempo;
-                tempos[login].count++;
+                const statusHfc = (hfcVolume === 1 && hfcIndicador === 1) ? 'Ganho' : 'Perda';
+                const statusGpon = (gponVolume === 1 && gponIndicador === 1) ? 'Ganho' : 'Perda';
+                const status = (statusHfc === 'Ganho' && statusGpon === 'Ganho') ? 'Ganho' : 'Perda';
 
-                // Armazenar perdas e ganhos
-                if (!perdasGanhos[login]) perdasGanhos[login] = { ganho: 0, perda: 0 };
-                if (hfcStatus === 'Ganho' || gponStatus === 'Ganho') perdasGanhos[login].ganho++;
-                else perdasGanhos[login].perda++;
+                data.push({ outage, login, tempo, status });
+            }
+            calculateResults();
+        };
+        reader.readAsText(file);
+    }
 
-                // Armazenar horários de perda (para consulta por horário)
-                const hora = new Date(inicio).getHours();
-                if (!horariosPerda[hora]) horariosPerda[hora] = { perda: 0, ganho: 0 };
-                if (hfcStatus === 'Perda' || gponStatus === 'Perda') horariosPerda[hora].perda++;
-                else horariosPerda[hora].ganho++;
+    function calculateResults() {
+        // Calculando o tempo médio por login
+        const loginTimes = {};
+        const loginOutages = {};
+        const timeLoss = {};
 
-                // Armazenar outages por login
-                if (!outagesPorLogin[login]) outagesPorLogin[login] = [];
-                outagesPorLogin[login].push({ outage, hfcStatus, gponStatus });
-            });
-
-            // Exibir resultados
-            resultado += "<h3>Tempos Médios por Login:</h3><ul>";
-            for (const login in tempos) {
-                const mediaTempo = tempos[login].totalTempo / tempos[login].count;
-                resultado += `<li>${login}: ${mediaTempo.toFixed(2)} minutos</li>`;
+        data.forEach(item => {
+            if (!loginTimes[item.login]) {
+                loginTimes[item.login] = { totalTime: 0, count: 0, losses: 0, gains: 0, outages: [] };
             }
 
-            resultado += "</ul><h3>Perdas/Ganhos por Login:</h3><ul>";
-            for (const login in perdasGanhos) {
-                resultado += `<li>${login}: Ganhos - ${perdasGanhos[login].ganho}, Perdas - ${perdasGanhos[login].perda}</li>`;
-            }
-
-            resultado += "</ul><h3>Horários com mais Perdas:</h3><ul>";
-            for (const hora in horariosPerda) {
-                resultado += `<li>Hora ${hora}: Perdas - ${horariosPerda[hora].perda}, Ganhos - ${horariosPerda[hora].ganho}</li>`;
-            }
-
-            document.getElementById("result").innerHTML = resultado;
-        }
-
-        // Função para consultar outages por login
-        function consultarPorLogin() {
-            const loginConsulta = document.getElementById("loginInput").value;
-            const resultadoConsulta = outagesPorLogin[loginConsulta] || [];
-
-            let resultado = '';
-            if (resultadoConsulta.length === 0) {
-                resultado = `<p>Nenhum outage encontrado para o login ${loginConsulta}.</p>`;
+            loginTimes[item.login].totalTime += item.tempo;
+            loginTimes[item.login].count++;
+            loginTimes[item.login].outages.push(item.outage);
+            if (item.status === 'Perda') {
+                loginTimes[item.login].losses++;
             } else {
-                resultado = `<h3>Outages para o login ${loginConsulta}:</h3><ul>`;
-                resultadoConsulta.forEach(({ outage, hfcStatus, gponStatus }) => {
-                    resultado += `<li>Outage: ${outage}, HFC: ${hfcStatus}, GPON: ${gponStatus}</li>`;
-                });
-                resultado += "</ul>";
+                loginTimes[item.login].gains++;
             }
 
-            document.getElementById("consultaResult").innerHTML = resultado;
+            const hour = new Date(item.tempo).getHours();
+            if (!timeLoss[hour]) {
+                timeLoss[hour] = 0;
+            }
+            if (item.status === 'Perda') {
+                timeLoss[hour]++;
+            }
+        });
+
+        // Exibindo tempo médio por login
+        const avgTimeTable = document.getElementById('avgTimeTable');
+        avgTimeTable.innerHTML = `
+            <tr>
+                <th>Login</th>
+                <th>Tempo Médio (min)</th>
+            </tr>`;
+        for (const login in loginTimes) {
+            const avgTime = (loginTimes[login].totalTime / loginTimes[login].count).toFixed(2);
+            avgTimeTable.innerHTML += `
+                <tr>
+                    <td>${login}</td>
+                    <td>${avgTime}</td>
+                </tr>`;
         }
-    </script>
+
+        // Exibindo outages ganhos e perdidos
+        const outagesTable = document.getElementById('outagesTable');
+        outagesTable.innerHTML = `
+            <tr>
+                <th>Login</th>
+                <th>Outages Ganhos</th>
+                <th>Outages Perdidos</th>
+            </tr>`;
+        for (const login in loginTimes) {
+            outagesTable.innerHTML += `
+                <tr>
+                    <td>${login}</td>
+                    <td>${loginTimes[login].gains}</td>
+                    <td>${loginTimes[login].losses}</td>
+                </tr>`;
+        }
+
+        // Exibindo horários com mais perdas
+        const lossTimesTable = document.getElementById('lossTimesTable');
+        lossTimesTable.innerHTML = `
+            <tr>
+                <th>Hora</th>
+                <th>Quantidade de Perdas</th>
+            </tr>`;
+        for (const hour in timeLoss) {
+            lossTimesTable.innerHTML += `
+                <tr>
+                    <td>${hour}:00</td>
+                    <td>${timeLoss[hour]}</td>
+                </tr>`;
+        }
+
+        document.getElementById('result').style.display = 'block';
+    }
+
+    function consultLogin() {
+        const loginQuery = document.getElementById('loginQuery').value.trim();
+        if (!loginQuery) return alert('Digite um login para consulta.');
+
+        const filteredOutages = data.filter(item => item.login === loginQuery);
+        const consultationTable = document.getElementById('consultationTable');
+        consultationTable.innerHTML = `
+            <tr>
+                <th>Outage</th>
+                <th>Status</th>
+            </tr>`;
+        filteredOutages.forEach(item => {
+            consultationTable.innerHTML += `
+                <tr>
+                    <td>${item.outage}</td>
+                    <td>${item.status}</td>
+                </tr>`;
+        });
+
+        document.getElementById('consultation-result').style.display = 'block';
+    }
+</script>
+
 </body>
 </html>
