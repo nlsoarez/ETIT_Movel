@@ -105,7 +105,12 @@
                 }
 
                 // Calcular tempo em horas
-                let tempo = (new Date(fim) - new Date(inicio)) / 1000 / 60 / 60; // em horas
+                let tempo = 0;
+                if (inicio && fim) {
+                    let inicioData = new Date(inicio);
+                    let fimData = new Date(fim);
+                    tempo = (fimData - inicioData) / 1000 / 60 / 60; // Tempo em horas
+                }
 
                 // Ignorar caso HFC ou GPON tenham volume 0
                 if (hfcVolume == 0 && gponVolume == 0) return;
@@ -137,8 +142,8 @@
                 Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}
             `;
 
-            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
-            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
+            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b> horas`;
+            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b> horas`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
@@ -153,7 +158,7 @@
                 let cell1 = row.insertCell(0);
                 let cell2 = row.insertCell(1);
                 cell1.innerText = item[0]; // Ticket
-                cell2.innerText = item[1]; // Tempo
+                cell2.innerText = item[1].toFixed(2); // Tempo com 2 casas decimais
                 row.className = classe;
             });
         }
