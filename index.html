@@ -17,7 +17,7 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 800px;
+            max-width: 600px;
             margin: auto;
         }
         .logo {
@@ -95,6 +95,7 @@
             </thead>
             <tbody></tbody>
         </table>
+        <h3>Tempo Médio: <span id="tempoMedio"></span> min</h3>
     </div>
 
     <script>
@@ -113,12 +114,6 @@
             reader.readAsArrayBuffer(file);
         });
 
-        function calcularTempo(inicio, fim) {
-            const inicioData = new Date(inicio);
-            const fimData = new Date(fim);
-            return Math.round((fimData - inicioData) / 60000); // Converte para minutos
-        }
-
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim();
             if (!matricula) {
@@ -132,9 +127,9 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula) {
-                    let inicio = row[2];
-                    let fim = row[3];
-                    let tempo = calcularTempo(inicio, fim);
+                    let inicio = new Date(row[2]);
+                    let fim = new Date(row[3]);
+                    let tempo = (fim - inicio) / 60000; // Converte milissegundos para minutos
                     tempos.push(tempo);
 
                     let ganhoHFC = (row[5] === 1 && row[6] === 1);
@@ -142,14 +137,14 @@
                     let ganhoGPON = (row[7] === 1 && row[8] === 1);
                     let perdaGPON = (row[7] === 1 && row[8] === 0);
 
-                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempo });
-                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempo });
+                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo });
+                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo });
                 }
             });
 
-            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : 0;
-
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio} min`;
+            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : "N/A";
+            document.getElementById('tempoMedio').innerText = tempoMedio;
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
@@ -157,20 +152,21 @@
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.tempo;
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
 
             perdas.forEach(item => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.tempo;
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
         }
 
         function limparConsulta() {
             document.getElementById('matricula').value = "";
             document.getElementById('resumo').innerText = "";
+            document.getElementById('tempoMedio').innerText = "";
             document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
         }
     </script>
