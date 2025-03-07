@@ -90,7 +90,7 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
-                    <th>Tempo (minutos)</th>
+                    <th>Tempo (min)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -113,10 +113,10 @@
             reader.readAsArrayBuffer(file);
         });
 
-        function calcularTempoMinutos(inicio, fim) {
+        function calcularTempo(inicio, fim) {
             const inicioData = new Date(inicio);
             const fimData = new Date(fim);
-            return (fimData - inicioData) / (1000 * 60);
+            return Math.round((fimData - inicioData) / 60000); // Converte para minutos
         }
 
         function consultarOutages() {
@@ -132,24 +132,24 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula) {
-                    let tempo = calcularTempoMinutos(row[2], row[3]);
-                    
+                    let inicio = row[2];
+                    let fim = row[3];
+                    let tempo = calcularTempo(inicio, fim);
+                    tempos.push(tempo);
+
                     let ganhoHFC = (row[5] === 1 && row[6] === 1);
                     let perdaHFC = (row[5] === 1 && row[6] === 0);
                     let ganhoGPON = (row[7] === 1 && row[8] === 1);
                     let perdaGPON = (row[7] === 1 && row[8] === 0);
-                    
+
                     if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempo });
                     if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempo });
-                    
-                    tempos.push(tempo);
                 }
             });
 
             let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : 0;
-            
+
             document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio} min`;
-            
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
@@ -157,14 +157,14 @@
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
+                row.insertCell(2).innerText = item.tempo;
             });
 
             perdas.forEach(item => {
                 let row = tabela.insertRow();
                 row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
+                row.insertCell(2).innerText = item.tempo;
             });
         }
 
