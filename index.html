@@ -46,30 +46,45 @@
             if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
                 const reader = new FileReader();
                 reader.onload = function(event) {
-                    const data = event.target.result;
-                    const workbook = XLSX.read(data, { type: 'binary' });
+                    try {
+                        const data = event.target.result;
+                        const workbook = XLSX.read(data, { type: 'binary' });
+                        console.log("Planilha carregada:", workbook);
 
-                    // Supondo que os dados estão na primeira aba
-                    const sheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[sheetName];
+                        // Supondo que os dados estão na primeira aba
+                        const sheetName = workbook.SheetNames[0];
+                        const worksheet = workbook.Sheets[sheetName];
 
-                    // Converter os dados da planilha para um formato JSON
-                    planilha = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    console.log("Planilha carregada:", planilha);
+                        // Converter os dados da planilha para um formato JSON
+                        planilha = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                        console.log("Planilha convertida para JSON:", planilha);
+                    } catch (error) {
+                        console.error("Erro ao processar o arquivo Excel:", error);
+                    }
                 };
                 reader.readAsBinaryString(file);
             } else {
-                alert('Por favor, carregue um arquivo Excel (.xlsx ou .xls).');
+                alert('Por favor, carregue um arquivo Excel válido (.xlsx ou .xls).');
             }
         }
 
         function consultarSLA() {
             const login = document.getElementById('loginInput').value.toLowerCase();
-            console.log("Consultando para:", login);
+            console.log("Consultando para o login:", login);
+
+            if (!login) {
+                alert('Por favor, insira um login válido.');
+                return;
+            }
 
             let resultados = [];
             let totalTempo = 0;
             let totalPerdas = 0;
+
+            if (planilha.length === 0) {
+                alert('Por favor, carregue um arquivo Excel primeiro.');
+                return;
+            }
 
             // Processar as linhas da planilha
             planilha.forEach(function(linha, index) {
