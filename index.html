@@ -3,101 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload de Planilha e Cálculos de Outages</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+    <title>Upload de Planilha de Outages</title>
 </head>
 <body>
     <h1>Upload de Planilha de Outages</h1>
-    <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
-    <br><br>
+
+    <!-- Formulário para upload da planilha -->
+    <input type="file" id="fileInput" accept=".csv">
+    <button onclick="processFile()">Processar Planilha</button>
+
+    <h2>Resultados</h2>
+    
     <div id="result"></div>
 
-    <script>
-        document.getElementById('fileInput').addEventListener('change', handleFile, false);
+    <h2>Consulta por Login</h2>
+    <input type="text" id="loginInput" placeholder="Digite o Login">
+    <button onclick="consultarPorLogin()">Consultar</button>
 
-        function handleFile(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
+    <div id="consultaResult"></div>
+
+    <script>
+        let planilhaData = []; // Para armazenar os dados processados da planilha
+
+        // Função para processar o arquivo CSV
+        function processFile() {
+            const fileInput = document.getElementById("fileInput");
+            const file = fileInput.files[0];
+            if (!file) return alert("Por favor, faça o upload de uma planilha.");
+
             const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(sheet);
-                
-                processSheetData(jsonData);
+            reader.onload = function(event) {
+                const content = event.target.result;
+                processCSV(content);
             };
-            reader.readAsBinaryString(file);
+            reader.readAsText(file);
         }
 
-        function processSheetData(data) {
-            const logins = {};
-            let totalTime = 0;
-            let totalOutages = 0;
-            let outagesWon = 0;
-            let outagesLost = 0;
-            const hourLosses = {};
+        // Função para processar o conteúdo do CSV
+        function processCSV(content) {
+            const lines = content.split('\n');
+            planilhaData = lines.map(line => line.split(','));
+            
+            // Remover o cabeçalho
+            planilhaData.shift();
 
-            data.forEach(row => {
-                if (row['HFC - Volume'] === 0 || row['Gpon - Volume'] === 0) {
-                    return;
-                }
+            let resultado = '';
+            let tempos = {};
+            let perdasGanhos = {};
+            let horariosPerda = {};
+            let outagesPorLogin = {};
 
-                // Cálculo do tempo de cada outage
-                const startTime = new Date(row['Inicio']);
-                const endTime = new Date(row['Fim']);
-                const timeDiff = (endTime - startTime) / 1000 / 60; // em minutos
+            // Iterar pelas linhas para calcular o tempo e identificar perdas/ganhos
+            planilhaData.forEach((row) => {
+                const [outage, login, inicio, fim, hfcVolume, hfcIndicador, gponVolume, gponIndicador] = row;
 
-                // Armazenar tempo total
-                totalTime += timeDiff;
+                // Ignorar casos onde HFC Volume ou GPON Volume começam com 0
+                if (hfcVolume === '0' || gponVolume === '0') return;
 
-                // Identificar perdas e ganhos
-                const hfcLoss = (row['HFC - Volume'] === 1 && row['HFC - Indicador'] === 0) ? 1 : 0;
-                const hfcWin = (row['HFC - Volume'] === 1 && row['HFC - Indicador'] === 1) ? 1 : 0;
-                const gponLoss = (row['Gpon - Volume'] === 1 && row['Gpon - Indicador'] === 0) ? 1 : 0;
-                const gponWin = (row['Gpon - Volume'] === 1 && row['Gpon - Indicador'] === 1) ? 1 : 0;
+                // Calcular o tempo (coluna E)
+                const tempo = (new Date(fim) - new Date(inicio)) / 1000 / 60; // Tempo em minutos
 
-                // Contabilizar perdas e ganhos
-                outagesLost += (hfcLoss + gponLoss);
-                outagesWon += (hfcWin + gponWin);
+                // Calcular HFC e GPON (Ganho ou Perda)
+                const hfcStatus = hfcVolume === '1' && hfcIndicador === '1' ? 'Ganho' : 'Perda';
+                const gponStatus = gponVolume === '1' && gponIndicador === '1' ? 'Ganho' : 'Perda';
 
-                // Calcular tempo médio por login
-                const login = row['Login'];
-                if (!logins[login]) {
-                    logins[login] = { totalTime: 0, outageCount: 0 };
-                }
-                logins[login].totalTime += timeDiff;
-                logins[login].outageCount++;
+                // Armazenar tempo médio por login
+                if (!tempos[login]) tempos[login] = { totalTempo: 0, count: 0 };
+                tempos[login].totalTempo += tempo;
+                tempos[login].count++;
 
-                // Contabilizar perdas por hora
-                const hour = startTime.getHours();
-                if (!hourLosses[hour]) {
-                    hourLosses[hour] = 0;
-                }
-                hourLosses[hour] += (hfcLoss + gponLoss);
+                // Armazenar perdas e ganhos
+                if (!perdasGanhos[login]) perdasGanhos[login] = { ganho: 0, perda: 0 };
+                if (hfcStatus === 'Ganho' || gponStatus === 'Ganho') perdasGanhos[login].ganho++;
+                else perdasGanhos[login].perda++;
+
+                // Armazenar horários de perda (para consulta por horário)
+                const hora = new Date(inicio).getHours();
+                if (!horariosPerda[hora]) horariosPerda[hora] = { perda: 0, ganho: 0 };
+                if (hfcStatus === 'Perda' || gponStatus === 'Perda') horariosPerda[hora].perda++;
+                else horariosPerda[hora].ganho++;
+
+                // Armazenar outages por login
+                if (!outagesPorLogin[login]) outagesPorLogin[login] = [];
+                outagesPorLogin[login].push({ outage, hfcStatus, gponStatus });
             });
 
-            // Exibir os resultados
-            let resultHTML = `<h2>Resultados:</h2>`;
-            resultHTML += `<p><strong>Total de Outages:</strong> ${totalOutages}</p>`;
-            resultHTML += `<p><strong>Outages Ganhos:</strong> ${outagesWon}</p>`;
-            resultHTML += `<p><strong>Outages Perdidos:</strong> ${outagesLost}</p>`;
-
-            resultHTML += `<h3>Tempo Médio por Login:</h3><ul>`;
-            for (let login in logins) {
-                const avgTime = logins[login].totalTime / logins[login].outageCount;
-                resultHTML += `<li><strong>${login}:</strong> ${avgTime.toFixed(2)} minutos</li>`;
+            // Exibir resultados
+            resultado += "<h3>Tempos Médios por Login:</h3><ul>";
+            for (const login in tempos) {
+                const mediaTempo = tempos[login].totalTempo / tempos[login].count;
+                resultado += `<li>${login}: ${mediaTempo.toFixed(2)} minutos</li>`;
             }
-            resultHTML += `</ul>`;
 
-            resultHTML += `<h3>Perdas por Hora:</h3><ul>`;
-            for (let hour in hourLosses) {
-                resultHTML += `<li><strong>${hour}:00</strong> - ${hourLosses[hour]} perdas</li>`;
+            resultado += "</ul><h3>Perdas/Ganhos por Login:</h3><ul>";
+            for (const login in perdasGanhos) {
+                resultado += `<li>${login}: Ganhos - ${perdasGanhos[login].ganho}, Perdas - ${perdasGanhos[login].perda}</li>`;
             }
-            resultHTML += `</ul>`;
 
-            document.getElementById('result').innerHTML = resultHTML;
+            resultado += "</ul><h3>Horários com mais Perdas:</h3><ul>";
+            for (const hora in horariosPerda) {
+                resultado += `<li>Hora ${hora}: Perdas - ${horariosPerda[hora].perda}, Ganhos - ${horariosPerda[hora].ganho}</li>`;
+            }
+
+            document.getElementById("result").innerHTML = resultado;
+        }
+
+        // Função para consultar outages por login
+        function consultarPorLogin() {
+            const loginConsulta = document.getElementById("loginInput").value;
+            const resultadoConsulta = outagesPorLogin[loginConsulta] || [];
+
+            let resultado = '';
+            if (resultadoConsulta.length === 0) {
+                resultado = `<p>Nenhum outage encontrado para o login ${loginConsulta}.</p>`;
+            } else {
+                resultado = `<h3>Outages para o login ${loginConsulta}:</h3><ul>`;
+                resultadoConsulta.forEach(({ outage, hfcStatus, gponStatus }) => {
+                    resultado += `<li>Outage: ${outage}, HFC: ${hfcStatus}, GPON: ${gponStatus}</li>`;
+                });
+                resultado += "</ul>";
+            }
+
+            document.getElementById("consultaResult").innerHTML = resultado;
         }
     </script>
 </body>
