@@ -24,6 +24,10 @@
 
     <script>
         let planilhaData = []; // Para armazenar os dados processados da planilha
+        let tempos = {}; // Para armazenar os tempos médios por login
+        let perdasGanhos = {}; // Para armazenar perdas e ganhos por login
+        let horariosPerda = {}; // Para armazenar perdas e ganhos por horário
+        let outagesPorLogin = {}; // Para armazenar outages por login
 
         // Função para processar o arquivo CSV
         function processFile() {
@@ -41,18 +45,14 @@
 
         // Função para processar o conteúdo do CSV
         function processCSV(content) {
-            const lines = content.split('\n');
+            const lines = content.split('\n').filter(line => line.trim() !== '');
             planilhaData = lines.map(line => line.split(','));
-            
+
             // Remover o cabeçalho
             planilhaData.shift();
 
             let resultado = '';
-            let tempos = {};
-            let perdasGanhos = {};
-            let horariosPerda = {};
-            let outagesPorLogin = {};
-
+            
             // Iterar pelas linhas para calcular o tempo e identificar perdas/ganhos
             planilhaData.forEach((row) => {
                 const [outage, login, inicio, fim, hfcVolume, hfcIndicador, gponVolume, gponIndicador] = row;
