@@ -1,43 +1,104 @@
-import pandas as pd
-import datetime
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload de Planilha e Cálculos de Outages</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+</head>
+<body>
+    <h1>Upload de Planilha de Outages</h1>
+    <input type="file" id="fileInput" accept=".xlsx, .xls, .csv">
+    <br><br>
+    <div id="result"></div>
 
-def processar_arquivo(file_path, login_filtro):
-    # Carregar a planilha
-    df = pd.read_excel(file_path)
-    
-    # Garantir que as colunas necessárias existam
-    colunas_necessarias = ['Login', 'ID Outage', 'Tipo', 'Início', 'Fim']
-    if not all(col in df.columns for col in colunas_necessarias):
-        return "Erro: Colunas necessárias não encontradas no arquivo."
-    
-    # Filtrar pelo login
-    df_filtrado = df[df['Login'] == login_filtro].copy()
-    
-    # Converter colunas de tempo
-    df_filtrado['Início'] = pd.to_datetime(df_filtrado['Início'], format='%H:%M:%S', errors='coerce')
-    df_filtrado['Fim'] = pd.to_datetime(df_filtrado['Fim'], format='%H:%M:%S', errors='coerce')
-    
-    # Calcular tempo em minutos
-    df_filtrado['Tempo (min)'] = (df_filtrado['Fim'] - df_filtrado['Início']).dt.total_seconds() / 60
-    
-    # Substituir valores inválidos por 0
-    df_filtrado['Tempo (min)'] = df_filtrado['Tempo (min)'].fillna(0).round(2)
-    
-    # Contar ganhos e perdas
-    ganhos = len(df_filtrado[df_filtrado['Tipo'] == 'Ganho'])
-    perdas = len(df_filtrado[df_filtrado['Tipo'] == 'Perda'])
-    
-    # Calcular tempo médio
-    tempo_medio = df_filtrado['Tempo (min)'].mean()
-    tempo_medio = round(tempo_medio, 2) if not pd.isna(tempo_medio) else 0
-    
-    return df_filtrado[['ID Outage', 'Tipo', 'Tempo (min)']], ganhos, perdas, tempo_medio
+    <script>
+        document.getElementById('fileInput').addEventListener('change', handleFile, false);
 
-# Exemplo de uso
-file_path = '/mnt/data/Teste.xlsx'  # Caminho do arquivo
-login_filtro = 'N5923996'  # Exemplo de login
+        function handleFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const data = e.target.result;
+                const workbook = XLSX.read(data, { type: 'binary' });
+                const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(sheet);
+                
+                processSheetData(jsonData);
+            };
+            reader.readAsBinaryString(file);
+        }
 
-df_resultado, ganhos, perdas, tempo_medio = processar_arquivo(file_path, login_filtro)
-print(df_resultado)
-print(f"Ganhos: {ganhos} | Perdas: {perdas}")
-print(f"Tempo Médio: {tempo_medio} min")
+        function processSheetData(data) {
+            const logins = {};
+            let totalTime = 0;
+            let totalOutages = 0;
+            let outagesWon = 0;
+            let outagesLost = 0;
+            const hourLosses = {};
+
+            data.forEach(row => {
+                if (row['HFC - Volume'] === 0 || row['Gpon - Volume'] === 0) {
+                    return;
+                }
+
+                // Cálculo do tempo de cada outage
+                const startTime = new Date(row['Inicio']);
+                const endTime = new Date(row['Fim']);
+                const timeDiff = (endTime - startTime) / 1000 / 60; // em minutos
+
+                // Armazenar tempo total
+                totalTime += timeDiff;
+
+                // Identificar perdas e ganhos
+                const hfcLoss = (row['HFC - Volume'] === 1 && row['HFC - Indicador'] === 0) ? 1 : 0;
+                const hfcWin = (row['HFC - Volume'] === 1 && row['HFC - Indicador'] === 1) ? 1 : 0;
+                const gponLoss = (row['Gpon - Volume'] === 1 && row['Gpon - Indicador'] === 0) ? 1 : 0;
+                const gponWin = (row['Gpon - Volume'] === 1 && row['Gpon - Indicador'] === 1) ? 1 : 0;
+
+                // Contabilizar perdas e ganhos
+                outagesLost += (hfcLoss + gponLoss);
+                outagesWon += (hfcWin + gponWin);
+
+                // Calcular tempo médio por login
+                const login = row['Login'];
+                if (!logins[login]) {
+                    logins[login] = { totalTime: 0, outageCount: 0 };
+                }
+                logins[login].totalTime += timeDiff;
+                logins[login].outageCount++;
+
+                // Contabilizar perdas por hora
+                const hour = startTime.getHours();
+                if (!hourLosses[hour]) {
+                    hourLosses[hour] = 0;
+                }
+                hourLosses[hour] += (hfcLoss + gponLoss);
+            });
+
+            // Exibir os resultados
+            let resultHTML = `<h2>Resultados:</h2>`;
+            resultHTML += `<p><strong>Total de Outages:</strong> ${totalOutages}</p>`;
+            resultHTML += `<p><strong>Outages Ganhos:</strong> ${outagesWon}</p>`;
+            resultHTML += `<p><strong>Outages Perdidos:</strong> ${outagesLost}</p>`;
+
+            resultHTML += `<h3>Tempo Médio por Login:</h3><ul>`;
+            for (let login in logins) {
+                const avgTime = logins[login].totalTime / logins[login].outageCount;
+                resultHTML += `<li><strong>${login}:</strong> ${avgTime.toFixed(2)} minutos</li>`;
+            }
+            resultHTML += `</ul>`;
+
+            resultHTML += `<h3>Perdas por Hora:</h3><ul>`;
+            for (let hour in hourLosses) {
+                resultHTML += `<li><strong>${hour}:00</strong> - ${hourLosses[hour]} perdas</li>`;
+            }
+            resultHTML += `</ul>`;
+
+            document.getElementById('result').innerHTML = resultHTML;
+        }
+    </script>
+</body>
+</html>
