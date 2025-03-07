@@ -4,172 +4,117 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consulta SLA</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        .input-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        input, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        .botao { background-color: #d52b1e; color: white; border: none; cursor: pointer; font-weight: bold; }
-        .botao:hover { background-color: #b2221a; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #d52b1e; color: white; }
-        .ganho { background-color: green; color: white; }
-        .perda { background-color: red; color: white; }
-        .contador { font-weight: bold; margin-top: 10px; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        .resultados {
+            margin-top: 20px;
+        }
+        .resultado-item {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Painel ETIT Residencial (TESTE)</h2>
-        <div class="input-group">
-            <input type="file" id="upload" accept=".xlsx">
-        </div>
-        <div class="input-group">
-            <input type="text" id="login" placeholder="Digite o login ou nome">
-            <button class="botao" onclick="consultarSLA()">Consultar</button>
-        </div>
-        <h3>Resultados:</h3>
-        <div id="contadores" class="contador"></div>
+    <h1>Consulta de SLA - Tempo de Perda</h1>
 
-        <h3>Dentro do SLA:</h3>
-        <div id="tempoMedioGanhos" class="contador"></div>
-        <table id="tabelaGanhos">
-            <thead>
-                <tr><th>Ticket</th><th>Tempo (Minutos)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <label for="loginInput">Digite o Login:</label>
+    <input type="text" id="loginInput" placeholder="Ex: n5577565">
+    <button onclick="consultarSLA()">Consultar</button>
 
-        <h3>Fora do SLA:</h3>
-        <div id="tempoMedioPerdas" class="contador"></div>
-        <table id="tabelaPerdas">
-            <thead>
-                <tr><th>Ticket</th><th>Tempo (Minutos)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    <div class="resultados" id="resultados"></div>
 
     <script>
-        let dadosPlanilha = [];
-
-        // Função para carregar a planilha
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                console.log("Planilha carregada:", dadosPlanilha); // Debug
-                alert("Planilha carregada com sucesso!");
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        // Função para consultar e processar os dados com base no login
         function consultarSLA() {
-            const login = document.getElementById('login').value.trim().toLowerCase();
-            if (!login) {
-                alert("Digite um login ou nome!");
-                return;
-            }
+            var login = document.getElementById('loginInput').value.toLowerCase(); // Obtendo o login
+            console.log("Consultando para:", login);
 
-            console.log("Consultando para:", login); // Debug
+            var planilha = carregarPlanilha(); // Simulação de carregamento de planilha
+            console.log("Planilha carregada:", planilha);
 
-            let ganhos = [];
-            let perdas = [];
-            let totalTempoGanhos = 0;
-            let totalTempoPerdas = 0;
+            var resultados = [];
+            var totalTempo = 0;  // Para calcular a média
+            var totalPerdas = 0; // Para contar o número total de perdas
 
-            // Verificar se os dados da planilha estão corretos
-            if (dadosPlanilha.length === 0) {
-                alert("A planilha não foi carregada corretamente.");
-                return;
-            }
+            planilha.forEach(function(linha, index) {
+                var loginCelula = linha[1].toLowerCase(); // Verificar o login na linha
+                var tempo = linha[6]; // Tempo está na coluna F para HFC, G para GPON
 
-            dadosPlanilha.forEach((row, index) => {
-                if (!row || row.length < 9) {
-                    console.log(`Linha ${index + 1} ignorada (dados incompletos ou errados):`, row); // Debug
-                    return; // Ignorar linhas incompletas
-                }
+                // Verifica se o login corresponde e se o tempo é válido
+                if (loginCelula === login) {
+                    // Verifica se o tempo é válido e é uma string
+                    if (typeof tempo === 'string' || tempo instanceof String) {
+                        var tempoSplit = tempo.split(':'); // Separar tempo no formato hh:mm:ss
 
-                let ticket = row[0];  // Coluna A - Tickets (Outage)
-                let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
-                let tempo = row[4]; // Coluna E - Tempo de resposta
+                        // Verifica se o tempo está no formato correto
+                        if (tempoSplit.length === 3) {
+                            // Converter tempo para minutos
+                            var horas = parseInt(tempoSplit[0], 10);
+                            var minutos = parseInt(tempoSplit[1], 10);
+                            var segundos = parseInt(tempoSplit[2], 10);
 
-                // Ignorar caso o tempo não esteja preenchido
-                if (!tempo || typeof tempo !== 'string') {
-                    console.log(`Linha ${index + 1} ignorada (tempo não encontrado ou não é uma string):`, row); // Debug
-                    return;
-                }
+                            var tempoEmMinutos = horas * 60 + minutos + (segundos / 60);
+                            totalTempo += tempoEmMinutos; // Somar ao total de tempo
+                            totalPerdas++;
 
-                // Garantir que o valor de 'tempo' seja uma string
-                tempo = tempo.toString().trim();
-
-                // Verificar se o tempo tem o formato adequado (HH:MM:SS)
-                if (!/^\d{2}:\d{2}:\d{2}$/.test(tempo)) {
-                    console.log(`Linha ${index + 1} ignorada (formato de tempo inválido):`, row); // Debug
-                    return;
-                }
-
-                // Converter o tempo para minutos (supondo que o tempo venha no formato "HH:MM:SS")
-                let [horas, minutos, segundos] = tempo.split(":").map(Number);
-                let tempoEmMinutos = (horas * 60) + minutos + (segundos / 60);
-
-                // Definir ganho ou perda com base no tempo
-                let resultado = "";
-                if (tempoEmMinutos <= 240) {  // Dentro do SLA (4 horas = 240 minutos)
-                    resultado = "ganho";
-                } else {  // Fora do SLA
-                    resultado = "perda";
-                }
-
-                // Comparar login de forma insensível ao caso (maiúsculas/minúsculas)
-                if (usuarioLogin && usuarioLogin.includes(login)) {
-                    console.log(`Encontrado login ${login} em linha ${index + 1}`); // Debug
-
-                    if (resultado === "ganho") {
-                        ganhos.push([ticket, tempoEmMinutos]);
-                        totalTempoGanhos += tempoEmMinutos;
-                    } else if (resultado === "perda") {
-                        perdas.push([ticket, tempoEmMinutos]);
-                        totalTempoPerdas += tempoEmMinutos;
+                            resultados.push({
+                                outage: linha[0],  // Coluna A para Outage
+                                login: linha[1],    // Coluna B para Login
+                                tempo: tempo,       // Tempo original
+                                tempoEmMinutos: tempoEmMinutos.toFixed(2) // Tempo em minutos
+                            });
+                        } else {
+                            console.log("Tempo inválido na linha " + (index + 1) + ": " + tempo);
+                        }
+                    } else {
+                        console.log("Tempo não encontrado ou não é uma string na linha " + (index + 1) + ": ", linha);
                     }
                 }
             });
 
-            let mediaGanhos = ganhos.length > 0 ? (totalTempoGanhos / ganhos.length).toFixed(2) : "N/A";
-            let mediaPerdas = perdas.length > 0 ? (totalTempoPerdas / perdas.length).toFixed(2) : "N/A";
+            // Exibe os resultados na tela
+            var resultadosDiv = document.getElementById('resultados');
+            resultadosDiv.innerHTML = ''; // Limpar resultados anteriores
 
-            document.getElementById("contadores").innerHTML = `
-                Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}
-            `;
+            if (resultados.length > 0) {
+                resultados.forEach(function(resultado) {
+                    var resultadoDiv = document.createElement('div');
+                    resultadoDiv.classList.add('resultado-item');
+                    resultadoDiv.innerHTML = "Outage: " + resultado.outage + " | Tempo: " + resultado.tempoEmMinutos + " minutos";
+                    resultadosDiv.appendChild(resultadoDiv);
+                });
 
-            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos} minutos</b>`;
-            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas} minutos</b>`;
+                // Calcular a média
+                var mediaTempo = totalTempo / totalPerdas;
+                var mediaDiv = document.createElement('div');
+                mediaDiv.classList.add('resultado-item');
+                mediaDiv.innerHTML = "<strong>Média do tempo de perdas: " + mediaTempo.toFixed(2) + " minutos</strong>";
+                resultadosDiv.appendChild(mediaDiv);
 
-            atualizarTabela("tabelaGanhos", ganhos, "ganho");
-            atualizarTabela("tabelaPerdas", perdas, "perda");
+            } else {
+                var noResultsDiv = document.createElement('div');
+                noResultsDiv.classList.add('resultado-item');
+                noResultsDiv.innerHTML = "<strong>Nenhum resultado encontrado para o login " + login + ".</strong>";
+                resultadosDiv.appendChild(noResultsDiv);
+            }
         }
 
-        // Função para atualizar as tabelas de ganhos e perdas
-        function atualizarTabela(idTabela, dados, classe) {
-            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
-            tabela.innerHTML = "";
-            dados.forEach(item => {
-                let row = tabela.insertRow();
-                let cell1 = row.insertCell(0);
-                let cell2 = row.insertCell(1);
-                cell1.innerText = item[0]; // Ticket
-                cell2.innerText = item[1].toFixed(2); // Tempo (em minutos, com 2 casas decimais)
-                row.className = classe;
-            });
+        // Função simulada de carregamento da planilha (a função real deve carregar os dados reais)
+        function carregarPlanilha() {
+            // Exemplo de dados de planilha
+            return [
+                ["Outage1", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:15:30"],
+                ["Outage2", "n5577565", "12/03/2025", "Outros dados", "F", "G", "01:30:45"],
+                ["Outage3", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:45:10"],
+                ["Outage4", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:20:00"]
+            ];
         }
     </script>
 </body>
