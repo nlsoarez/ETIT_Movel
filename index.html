@@ -1,174 +1,43 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Outages</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f4;
-            padding: 20px;
-        }
-        .container {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            max-width: 600px;
-            margin: auto;
-        }
-        .logo {
-            width: 100px;
-            margin-bottom: 15px;
-        }
-        h2 {
-            color: #333;
-        }
-        input, button {
-            padding: 10px;
-            margin: 10px 5px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            background: #dc3545;
-            color: white;
-            border: none;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        button:hover {
-            background: #b02a37;
-        }
-        table {
-            width: 100%;
-            margin-top: 15px;
-            border-collapse: collapse;
-        }
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: center;
-        }
-        th {
-            background: #dc3545;
-            color: white;
-        }
-        .ganho {
-            background-color: #28a745;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-        .perda {
-            background-color: #dc3545;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 5px;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
-        <h2>Painel ETIT Residencial</h2>
-        <input type="file" id="upload" accept=".xlsx">
-        <br>
-        <input type="text" id="matricula" placeholder="Digite o Login">
-        <button onclick="consultarOutages()">Consultar</button>
-        <button onclick="limparConsulta()">Limpar</button>
-        <br>
-        <h3>Resultados:</h3>
-        <p id="resumo"></p>
-        <table id="tabelaResultados">
-            <thead>
-                <tr>
-                    <th>ID Outage</th>
-                    <th>Tipo</th>
-                    <th>Tempo (min)</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-        <h3>Tempo Médio: <span id="tempoMedio"></span> min</h3>
-    </div>
+import pandas as pd
+import datetime
 
-    <script>
-        let dadosPlanilha = [];
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = workbook.Sheets[sheetName];
-                dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                alert("Planilha carregada com sucesso!");
-            };
-            reader.readAsArrayBuffer(file);
-        });
+def processar_arquivo(file_path, login_filtro):
+    # Carregar a planilha
+    df = pd.read_excel(file_path)
+    
+    # Garantir que as colunas necessárias existam
+    colunas_necessarias = ['Login', 'ID Outage', 'Tipo', 'Início', 'Fim']
+    if not all(col in df.columns for col in colunas_necessarias):
+        return "Erro: Colunas necessárias não encontradas no arquivo."
+    
+    # Filtrar pelo login
+    df_filtrado = df[df['Login'] == login_filtro].copy()
+    
+    # Converter colunas de tempo
+    df_filtrado['Início'] = pd.to_datetime(df_filtrado['Início'], format='%H:%M:%S', errors='coerce')
+    df_filtrado['Fim'] = pd.to_datetime(df_filtrado['Fim'], format='%H:%M:%S', errors='coerce')
+    
+    # Calcular tempo em minutos
+    df_filtrado['Tempo (min)'] = (df_filtrado['Fim'] - df_filtrado['Início']).dt.total_seconds() / 60
+    
+    # Substituir valores inválidos por 0
+    df_filtrado['Tempo (min)'] = df_filtrado['Tempo (min)'].fillna(0).round(2)
+    
+    # Contar ganhos e perdas
+    ganhos = len(df_filtrado[df_filtrado['Tipo'] == 'Ganho'])
+    perdas = len(df_filtrado[df_filtrado['Tipo'] == 'Perda'])
+    
+    # Calcular tempo médio
+    tempo_medio = df_filtrado['Tempo (min)'].mean()
+    tempo_medio = round(tempo_medio, 2) if not pd.isna(tempo_medio) else 0
+    
+    return df_filtrado[['ID Outage', 'Tipo', 'Tempo (min)']], ganhos, perdas, tempo_medio
 
-        function consultarOutages() {
-            const matricula = document.getElementById('matricula').value.trim();
-            if (!matricula) {
-                alert("Digite uma matrícula!");
-                return;
-            }
+# Exemplo de uso
+file_path = '/mnt/data/Teste.xlsx'  # Caminho do arquivo
+login_filtro = 'N5923996'  # Exemplo de login
 
-            let ganhos = [];
-            let perdas = [];
-            let tempos = [];
-
-            dadosPlanilha.forEach(row => {
-                if (row[1] === matricula) {
-                    let inicio = new Date(row[2]);
-                    let fim = new Date(row[3]);
-                    let tempo = (fim - inicio) / 60000; // Converte milissegundos para minutos
-                    tempos.push(tempo);
-
-                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
-                    let perdaHFC = (row[5] === 1 && row[6] === 0);
-                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
-                    let perdaGPON = (row[7] === 1 && row[8] === 0);
-
-                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo });
-                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo });
-                }
-            });
-
-            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : "N/A";
-            document.getElementById('tempoMedio').innerText = tempoMedio;
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length}`;
-            const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
-            tabela.innerHTML = "";
-
-            ganhos.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
-                row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
-            });
-
-            perdas.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item.id;
-                row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
-                row.insertCell(2).innerText = item.tempo.toFixed(2);
-            });
-        }
-
-        function limparConsulta() {
-            document.getElementById('matricula').value = "";
-            document.getElementById('resumo').innerText = "";
-            document.getElementById('tempoMedio').innerText = "";
-            document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0].innerHTML = "";
-        }
-    </script>
-</body>
-</html>
+df_resultado, ganhos, perdas, tempo_medio = processar_arquivo(file_path, login_filtro)
+print(df_resultado)
+print(f"Ganhos: {ganhos} | Perdas: {perdas}")
+print(f"Tempo Médio: {tempo_medio} min")
