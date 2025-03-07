@@ -74,7 +74,7 @@
 
         // Função para consultar e processar os dados com base no login
         function consultarSLA() {
-            const login = document.getElementById('login').value.trim();
+            const login = document.getElementById('login').value.trim().toLowerCase();
             if (!login) {
                 alert("Digite um login ou nome!");
                 return;
@@ -104,12 +104,10 @@
                     return;
                 }
 
-                // Calcular tempo em horas
+                // Calcular tempo em horas (convertendo de hh:mm:ss para horas decimais)
                 let tempo = 0;
                 if (inicio && fim) {
-                    let inicioData = new Date(inicio);
-                    let fimData = new Date(fim);
-                    tempo = (fimData - inicioData) / 1000 / 60 / 60; // Tempo em horas
+                    tempo = calcularTempoEmHoras(inicio, fim);
                 }
 
                 // Ignorar caso HFC ou GPON tenham volume 0
@@ -123,8 +121,8 @@
                     resultado = "perda";
                 }
 
-                // Comparar login
-                if (usuarioLogin && usuarioLogin.includes(login.toLowerCase())) {
+                // Comparar login de forma insensível ao caso (maiúsculas/minúsculas)
+                if (usuarioLogin && usuarioLogin.includes(login)) {
                     if (resultado === "ganho") {
                         ganhos.push([ticket, tempo]);
                         totalTempoGanhos += tempo;
@@ -147,6 +145,25 @@
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
+        }
+
+        // Função para calcular o tempo em horas a partir de hh:mm:ss
+        function calcularTempoEmHoras(inicio, fim) {
+            let inicioParts = inicio.split(":");
+            let fimParts = fim.split(":");
+
+            let inicioHora = parseInt(inicioParts[0]);
+            let inicioMinuto = parseInt(inicioParts[1]);
+            let inicioSegundo = parseInt(inicioParts[2]);
+
+            let fimHora = parseInt(fimParts[0]);
+            let fimMinuto = parseInt(fimParts[1]);
+            let fimSegundo = parseInt(fimParts[2]);
+
+            let inicioTotalMinutos = inicioHora * 60 + inicioMinuto + inicioSegundo / 60;
+            let fimTotalMinutos = fimHora * 60 + fimMinuto + fimSegundo / 60;
+
+            return (fimTotalMinutos - inicioTotalMinutos) / 60; // Retorna tempo em horas
         }
 
         // Função para atualizar as tabelas de ganhos e perdas
