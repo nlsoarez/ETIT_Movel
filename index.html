@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta SLA</title>
+    <title>Consulta SLA - Planilha Excel</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,37 +31,64 @@
 
     <div class="resultados" id="resultados"></div>
 
+    <input type="file" id="upload" accept=".xlsx, .xls">
+    <button onclick="handleFile()">Carregar Arquivo Excel</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
+
     <script>
+        let planilha = [];
+
+        function handleFile() {
+            const fileInput = document.getElementById('upload');
+            const file = fileInput.files[0];
+
+            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const data = event.target.result;
+                    const workbook = XLSX.read(data, { type: 'binary' });
+
+                    // Supondo que os dados estão na primeira aba
+                    const sheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[sheetName];
+
+                    // Converter os dados da planilha para um formato JSON
+                    planilha = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    console.log("Planilha carregada:", planilha);
+                };
+                reader.readAsBinaryString(file);
+            } else {
+                alert('Por favor, carregue um arquivo Excel (.xlsx ou .xls).');
+            }
+        }
+
         function consultarSLA() {
-            var login = document.getElementById('loginInput').value.toLowerCase(); // Obtendo o login
+            const login = document.getElementById('loginInput').value.toLowerCase();
             console.log("Consultando para:", login);
 
-            var planilha = carregarPlanilha(); // Simulação de carregamento de planilha
-            console.log("Planilha carregada:", planilha);
+            let resultados = [];
+            let totalTempo = 0;
+            let totalPerdas = 0;
 
-            var resultados = [];
-            var totalTempo = 0;  // Para calcular a média
-            var totalPerdas = 0; // Para contar o número total de perdas
-
+            // Processar as linhas da planilha
             planilha.forEach(function(linha, index) {
-                var loginCelula = linha[1].toLowerCase(); // Verificar o login na linha
-                var tempo = linha[6]; // Tempo está na coluna F para HFC, G para GPON
+                const loginCelula = linha[1]?.toLowerCase(); // Login na coluna B
+                const tempo = linha[6]; // Tempo está na coluna G (F para HFC, G para GPON)
 
-                // Verifica se o login corresponde e se o tempo é válido
+                // Verificar se o login corresponde e se o tempo é válido
                 if (loginCelula === login) {
-                    // Verifica se o tempo é válido e é uma string
                     if (typeof tempo === 'string' || tempo instanceof String) {
-                        var tempoSplit = tempo.split(':'); // Separar tempo no formato hh:mm:ss
+                        const tempoSplit = tempo.split(':'); // Separar tempo no formato hh:mm:ss
 
-                        // Verifica se o tempo está no formato correto
+                        // Verificar se o tempo está no formato correto
                         if (tempoSplit.length === 3) {
-                            // Converter tempo para minutos
-                            var horas = parseInt(tempoSplit[0], 10);
-                            var minutos = parseInt(tempoSplit[1], 10);
-                            var segundos = parseInt(tempoSplit[2], 10);
+                            const horas = parseInt(tempoSplit[0], 10);
+                            const minutos = parseInt(tempoSplit[1], 10);
+                            const segundos = parseInt(tempoSplit[2], 10);
 
-                            var tempoEmMinutos = horas * 60 + minutos + (segundos / 60);
-                            totalTempo += tempoEmMinutos; // Somar ao total de tempo
+                            const tempoEmMinutos = horas * 60 + minutos + (segundos / 60);
+                            totalTempo += tempoEmMinutos;
                             totalPerdas++;
 
                             resultados.push({
@@ -79,42 +106,31 @@
                 }
             });
 
-            // Exibe os resultados na tela
-            var resultadosDiv = document.getElementById('resultados');
+            // Exibir os resultados
+            const resultadosDiv = document.getElementById('resultados');
             resultadosDiv.innerHTML = ''; // Limpar resultados anteriores
 
             if (resultados.length > 0) {
                 resultados.forEach(function(resultado) {
-                    var resultadoDiv = document.createElement('div');
+                    const resultadoDiv = document.createElement('div');
                     resultadoDiv.classList.add('resultado-item');
                     resultadoDiv.innerHTML = "Outage: " + resultado.outage + " | Tempo: " + resultado.tempoEmMinutos + " minutos";
                     resultadosDiv.appendChild(resultadoDiv);
                 });
 
                 // Calcular a média
-                var mediaTempo = totalTempo / totalPerdas;
-                var mediaDiv = document.createElement('div');
+                const mediaTempo = totalTempo / totalPerdas;
+                const mediaDiv = document.createElement('div');
                 mediaDiv.classList.add('resultado-item');
                 mediaDiv.innerHTML = "<strong>Média do tempo de perdas: " + mediaTempo.toFixed(2) + " minutos</strong>";
                 resultadosDiv.appendChild(mediaDiv);
 
             } else {
-                var noResultsDiv = document.createElement('div');
+                const noResultsDiv = document.createElement('div');
                 noResultsDiv.classList.add('resultado-item');
                 noResultsDiv.innerHTML = "<strong>Nenhum resultado encontrado para o login " + login + ".</strong>";
                 resultadosDiv.appendChild(noResultsDiv);
             }
-        }
-
-        // Função simulada de carregamento da planilha (a função real deve carregar os dados reais)
-        function carregarPlanilha() {
-            // Exemplo de dados de planilha
-            return [
-                ["Outage1", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:15:30"],
-                ["Outage2", "n5577565", "12/03/2025", "Outros dados", "F", "G", "01:30:45"],
-                ["Outage3", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:45:10"],
-                ["Outage4", "n5577565", "12/03/2025", "Outros dados", "F", "G", "00:20:00"]
-            ];
         }
     </script>
 </body>
