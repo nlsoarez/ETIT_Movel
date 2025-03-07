@@ -37,7 +37,7 @@
         <div id="tempoMedioGanhos" class="contador"></div>
         <table id="tabelaGanhos">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Ticket</th><th>Tempo (Minutos)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -46,7 +46,7 @@
         <div id="tempoMedioPerdas" class="contador"></div>
         <table id="tabelaPerdas">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Ticket</th><th>Tempo (Minutos)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -97,9 +97,13 @@
                 // Ignorar caso o tempo não esteja preenchido
                 if (!tempo) return;
 
+                // Converter o tempo para minutos (supondo que o tempo venha no formato "HH:MM:SS")
+                let [horas, minutos, segundos] = tempo.split(":").map(Number);
+                let tempoEmMinutos = (horas * 60) + minutos + (segundos / 60);
+
                 // Definir ganho ou perda com base no tempo
                 let resultado = "";
-                if (tempo <= 4) {  // Dentro do SLA
+                if (tempoEmMinutos <= 240) {  // Dentro do SLA (4 horas = 240 minutos)
                     resultado = "ganho";
                 } else {  // Fora do SLA
                     resultado = "perda";
@@ -108,11 +112,11 @@
                 // Comparar login de forma insensível ao caso (maiúsculas/minúsculas)
                 if (usuarioLogin && usuarioLogin.includes(login)) {
                     if (resultado === "ganho") {
-                        ganhos.push([ticket, tempo]);
-                        totalTempoGanhos += tempo;
+                        ganhos.push([ticket, tempoEmMinutos]);
+                        totalTempoGanhos += tempoEmMinutos;
                     } else if (resultado === "perda") {
-                        perdas.push([ticket, tempo]);
-                        totalTempoPerdas += tempo;
+                        perdas.push([ticket, tempoEmMinutos]);
+                        totalTempoPerdas += tempoEmMinutos;
                     }
                 }
             });
@@ -124,8 +128,8 @@
                 Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}
             `;
 
-            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b> horas`;
-            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b> horas`;
+            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos} minutos</b>`;
+            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas} minutos</b>`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
@@ -140,7 +144,7 @@
                 let cell1 = row.insertCell(0);
                 let cell2 = row.insertCell(1);
                 cell1.innerText = item[0]; // Ticket
-                cell2.innerText = item[1]; // Tempo
+                cell2.innerText = item[1].toFixed(2); // Tempo (em minutos, com 2 casas decimais)
                 row.className = classe;
             });
         }
