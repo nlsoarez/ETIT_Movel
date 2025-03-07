@@ -99,6 +99,11 @@
                 let gponVolume = row[7]; // Coluna H - GPON - Volume
                 let gponIndicador = row[8]; // Coluna I - GPON - Indicador
 
+                // Verifica se as colunas necessárias têm dados
+                if (hfcVolume === undefined || hfcIndicador === undefined || gponVolume === undefined || gponIndicador === undefined) {
+                    return;
+                }
+
                 // Calcular tempo em horas
                 let tempo = (new Date(fim) - new Date(inicio)) / 1000 / 60 / 60; // em horas
 
