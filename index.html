@@ -87,15 +87,27 @@
             let totalTempoGanhos = 0;
             let totalTempoPerdas = 0;
 
-            dadosPlanilha.forEach(row => {
-                if (!row || row.length < 9) return; // Ignorar linhas incompletas
+            // Verificar se os dados da planilha estão corretos
+            if (dadosPlanilha.length === 0) {
+                alert("A planilha não foi carregada corretamente.");
+                return;
+            }
+
+            dadosPlanilha.forEach((row, index) => {
+                if (!row || row.length < 9) {
+                    console.log(`Linha ${index + 1} ignorada (dados incompletos ou errados):`, row); // Debug
+                    return; // Ignorar linhas incompletas
+                }
 
                 let ticket = row[0];  // Coluna A - Tickets (Outage)
                 let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
                 let tempo = row[4]; // Coluna E - Tempo de resposta
 
                 // Ignorar caso o tempo não esteja preenchido
-                if (!tempo) return;
+                if (!tempo) {
+                    console.log(`Linha ${index + 1} ignorada (tempo não encontrado):`, row); // Debug
+                    return;
+                }
 
                 // Converter o tempo para minutos (supondo que o tempo venha no formato "HH:MM:SS")
                 let [horas, minutos, segundos] = tempo.split(":").map(Number);
@@ -111,6 +123,8 @@
 
                 // Comparar login de forma insensível ao caso (maiúsculas/minúsculas)
                 if (usuarioLogin && usuarioLogin.includes(login)) {
+                    console.log(`Encontrado login ${login} em linha ${index + 1}`); // Debug
+
                     if (resultado === "ganho") {
                         ganhos.push([ticket, tempoEmMinutos]);
                         totalTempoGanhos += tempoEmMinutos;
