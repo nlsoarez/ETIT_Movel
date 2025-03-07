@@ -125,7 +125,7 @@
                 loginTimes[item.login].gains++;
             }
 
-            const hour = new Date(item.tempo).getHours();
+            const hour = new Date(item.tempo * 60000).getHours();
             if (!timeLoss[hour]) {
                 timeLoss[hour] = 0;
             }
