@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload de Planilha e Cálculos de Outages</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -31,11 +32,11 @@
 <h1>Upload de Planilha e Análise de Outages</h1>
 
 <!-- Formulário para upload da planilha -->
-<input type="file" id="fileInput" accept=".csv">
+<input type="file" id="fileInput" accept=".xlsx">
 <button onclick="processFile()">Processar Planilha</button>
 
 <!-- Resultados do cálculo -->
-<div id="result">
+<div id="result" style="display:none;">
     <h2>Resultados</h2>
     <p><strong>Tempo médio por login:</strong></p>
     <table id="avgTimeTable"></table>
@@ -52,7 +53,7 @@
 <input type="text" id="loginQuery" placeholder="Digite o Login">
 <button onclick="consultLogin()">Consultar</button>
 
-<div id="consultation-result">
+<div id="consultation-result" style="display:none;">
     <h3>Outages de Login</h3>
     <table id="consultationTable"></table>
 </div>
@@ -66,12 +67,16 @@
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            const csv = event.target.result;
-            const rows = csv.split('\n');
-            data = [];
+            const data = event.target.result;
+            const workbook = XLSX.read(data, { type: 'binary' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Assume-se que a planilha está na primeira aba
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
+            let parsedData = [];
+
+            // Processa as linhas a partir da segunda (ignorando cabeçalho)
             for (let i = 1; i < rows.length; i++) {
-                const columns = rows[i].split(',');
+                const columns = rows[i];
                 if (columns.length < 8) continue;
 
                 const outage = columns[0];
@@ -91,11 +96,13 @@
                 const statusGpon = (gponVolume === 1 && gponIndicador === 1) ? 'Ganho' : 'Perda';
                 const status = (statusHfc === 'Ganho' && statusGpon === 'Ganho') ? 'Ganho' : 'Perda';
 
-                data.push({ outage, login, tempo, status });
+                parsedData.push({ outage, login, tempo, status });
             }
+
+            data = parsedData;
             calculateResults();
         };
-        reader.readAsText(file);
+        reader.readAsBinaryString(file);
     }
 
     function calculateResults() {
