@@ -90,6 +90,7 @@
                 <tr>
                     <th>ID Outage</th>
                     <th>Tipo</th>
+                    <th>Tempo (minutos)</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -112,6 +113,12 @@
             reader.readAsArrayBuffer(file);
         });
 
+        function calcularTempoMinutos(inicio, fim) {
+            const inicioData = new Date(inicio);
+            const fimData = new Date(fim);
+            return (fimData - inicioData) / (1000 * 60);
+        }
+
         function consultarOutages() {
             const matricula = document.getElementById('matricula').value.trim();
             if (!matricula) {
@@ -125,37 +132,39 @@
 
             dadosPlanilha.forEach(row => {
                 if (row[1] === matricula) {
-                    let inicio = new Date(row[2]);
-                    let fim = new Date(row[3]);
-                    let tempo = (fim - inicio) / 60000;
-                    if (!isNaN(tempo)) tempos.push(tempo);
+                    let tempo = calcularTempoMinutos(row[2], row[3]);
                     
-                    let ganhoHFC = (row[4] === 1 && row[5] === 1);
-                    let perdaHFC = (row[4] === 1 && row[5] === 0);
-                    let ganhoGPON = (row[6] === 1 && row[7] === 1);
-                    let perdaGPON = (row[6] === 1 && row[7] === 0);
-
-                    if (ganhoHFC || ganhoGPON) ganhos.push(row[0]);
-                    if (perdaHFC || perdaGPON) perdas.push(row[0]);
+                    let ganhoHFC = (row[5] === 1 && row[6] === 1);
+                    let perdaHFC = (row[5] === 1 && row[6] === 0);
+                    let ganhoGPON = (row[7] === 1 && row[8] === 1);
+                    let perdaGPON = (row[7] === 1 && row[8] === 0);
+                    
+                    if (ganhoHFC || ganhoGPON) ganhos.push({ id: row[0], tempo: tempo });
+                    if (perdaHFC || perdaGPON) perdas.push({ id: row[0], tempo: tempo });
+                    
+                    tempos.push(tempo);
                 }
             });
 
-            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : "N/A";
-
-            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo médio: ${tempoMedio} min`;
+            let tempoMedio = tempos.length ? (tempos.reduce((a, b) => a + b, 0) / tempos.length).toFixed(2) : 0;
+            
+            document.getElementById('resumo').innerText = `Ganhos: ${ganhos.length} | Perdas: ${perdas.length} | Tempo Médio: ${tempoMedio} min`;
+            
             const tabela = document.getElementById('tabelaResultados').getElementsByTagName('tbody')[0];
             tabela.innerHTML = "";
 
-            ganhos.forEach(id => {
+            ganhos.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="ganho">Ganho</span>';
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
 
-            perdas.forEach(id => {
+            perdas.forEach(item => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = id;
+                row.insertCell(0).innerText = item.id;
                 row.insertCell(1).innerHTML = '<span class="perda">Perda</span>';
+                row.insertCell(2).innerText = item.tempo.toFixed(2);
             });
         }
 
