@@ -67,7 +67,7 @@
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            const data = event.target.result;
+            let data = event.target.result; // Alterado de const para let
             const workbook = XLSX.read(data, { type: 'binary' });
             const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Assume-se que a planilha está na primeira aba
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
@@ -99,7 +99,7 @@
                 parsedData.push({ outage, login, tempo, status });
             }
 
-            data = parsedData;
+            data = parsedData; // Atribuindo os dados processados à variável 'data'
             calculateResults();
         };
         reader.readAsBinaryString(file);
