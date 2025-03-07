@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Upload de Planilha e Cálculos de Outages</title>
+    <title>Upload de Planilha e Análise de Outages</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
     <style>
         body {
@@ -59,22 +59,26 @@
 </div>
 
 <script>
-    let data = [];
+    let data = []; // Variável para armazenar os dados da planilha
 
     function processFile() {
         const file = document.getElementById('fileInput').files[0];
-        if (!file) return alert('Por favor, faça o upload de um arquivo.');
+        if (!file) {
+            alert('Por favor, faça o upload de um arquivo.');
+            return;
+        }
 
         const reader = new FileReader();
         reader.onload = function(event) {
-            let data = event.target.result; // Alterado de const para let
-            const workbook = XLSX.read(data, { type: 'binary' });
-            const sheet = workbook.Sheets[workbook.SheetNames[0]]; // Assume-se que a planilha está na primeira aba
+            const fileData = event.target.result;
+            const workbook = XLSX.read(fileData, { type: 'binary' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]]; // A primeira aba
             const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-            let parsedData = [];
+            // Resetando a variável de dados
+            data = [];
 
-            // Processa as linhas a partir da segunda (ignorando cabeçalho)
+            // Processando as linhas
             for (let i = 1; i < rows.length; i++) {
                 const columns = rows[i];
                 if (columns.length < 8) continue;
@@ -88,53 +92,48 @@
                 const gponVolume = parseInt(columns[6]);
                 const gponIndicador = parseInt(columns[7]);
 
-                const tempo = (fim - inicio) / 1000 / 60; // Tempo em minutos
+                // Calculando tempo em minutos
+                const tempo = (fim - inicio) / 1000 / 60;
 
-                if ((hfcVolume === 0 || gponVolume === 0)) continue; // Desconsiderar volumes com 0
+                // Ignorando casos com volume 0
+                if (hfcVolume === 0 || gponVolume === 0) continue;
 
                 const statusHfc = (hfcVolume === 1 && hfcIndicador === 1) ? 'Ganho' : 'Perda';
                 const statusGpon = (gponVolume === 1 && gponIndicador === 1) ? 'Ganho' : 'Perda';
                 const status = (statusHfc === 'Ganho' && statusGpon === 'Ganho') ? 'Ganho' : 'Perda';
 
-                parsedData.push({ outage, login, tempo, status });
+                // Adicionando os dados processados
+                data.push({ outage, login, tempo, status });
             }
 
-            data = parsedData; // Atribuindo os dados processados à variável 'data'
+            // Calculando os resultados após processar a planilha
             calculateResults();
         };
-        reader.readAsBinaryString(file);
+        reader.readAsBinaryString(file); // Lendo o arquivo
     }
 
     function calculateResults() {
-        // Calculando o tempo médio por login
-        const loginTimes = {};
-        const loginOutages = {};
-        const timeLoss = {};
+        const loginTimes = {};  // Armazena o tempo por login
+        const loginOutages = {};  // Armazena os outages ganhos e perdidos
+        const timeLoss = {};  // Armazena as perdas por horário
 
+        // Processando os dados e calculando resultados
         data.forEach(item => {
             if (!loginTimes[item.login]) {
-                loginTimes[item.login] = { totalTime: 0, count: 0, losses: 0, gains: 0, outages: [] };
+                loginTimes[item.login] = { totalTime: 0, count: 0, losses: 0, gains: 0 };
             }
-
             loginTimes[item.login].totalTime += item.tempo;
             loginTimes[item.login].count++;
-            loginTimes[item.login].outages.push(item.outage);
-            if (item.status === 'Perda') {
-                loginTimes[item.login].losses++;
-            } else {
-                loginTimes[item.login].gains++;
-            }
+            if (item.status === 'Perda') loginTimes[item.login].losses++;
+            else loginTimes[item.login].gains++;
 
+            // Contabilizando perdas por hora
             const hour = new Date(item.tempo * 60000).getHours();
-            if (!timeLoss[hour]) {
-                timeLoss[hour] = 0;
-            }
-            if (item.status === 'Perda') {
-                timeLoss[hour]++;
-            }
+            if (!timeLoss[hour]) timeLoss[hour] = 0;
+            if (item.status === 'Perda') timeLoss[hour]++;
         });
 
-        // Exibindo tempo médio por login
+        // Exibindo os resultados de tempo médio por login
         const avgTimeTable = document.getElementById('avgTimeTable');
         avgTimeTable.innerHTML = `
             <tr>
@@ -182,12 +181,16 @@
                 </tr>`;
         }
 
+        // Exibindo os resultados
         document.getElementById('result').style.display = 'block';
     }
 
     function consultLogin() {
         const loginQuery = document.getElementById('loginQuery').value.trim();
-        if (!loginQuery) return alert('Digite um login para consulta.');
+        if (!loginQuery) {
+            alert('Digite um login para consulta.');
+            return;
+        }
 
         const filteredOutages = data.filter(item => item.login === loginQuery);
         const consultationTable = document.getElementById('consultationTable');
@@ -204,6 +207,7 @@
                 </tr>`;
         });
 
+        // Exibindo o resultado da consulta
         document.getElementById('consultation-result').style.display = 'block';
     }
 </script>
