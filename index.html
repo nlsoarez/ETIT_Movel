@@ -37,7 +37,7 @@
         <div id="tempoMedioGanhos" class="contador"></div>
         <table id="tabelaGanhos">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -46,7 +46,7 @@
         <div id="tempoMedioPerdas" class="contador"></div>
         <table id="tabelaPerdas">
             <thead>
-                <tr><th>Ticket</th><th>Tempo</th></tr>
+                <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
             </thead>
             <tbody></tbody>
         </table>
@@ -90,7 +90,7 @@
 
                 let ticket = row[0];  // Coluna A - Tickets
                 let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
-                let tempo = parseFloat(row[4]); // Coluna E - Tempo (convertido para número)
+                let tempo = parseFloat(row[4]) * 1440; // Coluna E - Tempo (convertido para minutos)
                 let etitHFC1 = row[5];
                 let etitHFC2 = row[6];
                 let etitGPON1 = row[7];
