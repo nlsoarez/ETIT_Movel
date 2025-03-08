@@ -22,7 +22,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>Painel ETIT Empresarial</h2>
+        <h2>Painel ETIT Residencial</h2>
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx">
         </div>
@@ -103,10 +103,10 @@
                     let etitGPON = (etitGPON1 == 1 && etitGPON2 == 1) ? 'Ganhou' : (etitGPON1 == 1 && etitGPON2 == 0) ? 'Perdeu' : 'Ignorado';
 
                     if (etitHFC === 'Ganhou' || etitGPON === 'Ganhou') {
-                        ganhos.push([ticket, tempo]);
+                        ganhos.push([ticket, tempo.toFixed(2)]);
                         totalTempoGanhos += tempo;
                     } else if (etitHFC === 'Perdeu' || etitGPON === 'Perdeu') {
-                        perdas.push([ticket, tempo]);
+                        perdas.push([ticket, tempo.toFixed(2)]);
                         totalTempoPerdas += tempo;
                     }
                 }
