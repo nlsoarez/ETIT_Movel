@@ -22,7 +22,7 @@
 </head>
 <body>
     <div class="container">
-        <h2>Painel ETIT Residencial</h2>
+        <h2>Painel ETIT Empresarial</h2>
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx">
         </div>
@@ -54,6 +54,22 @@
 
     <script>
         let dadosPlanilha = [];
+
+        const loginToName = {
+            "N0238475": "MARLEY MARQUES RIBEIRO",
+            "N5923221": "KELLY PINHEIRO LIRA",
+            "F160641": "JENNIFER MARIA ANDRADE SANTOS",
+            "N5772086": "THIAGO PEREIRA DA SILVA",
+            "N0239871": "LEONARDO FERREIRA LIMA DE ALMEIDA",
+            "N5577565": "MARISTELLA MARCIA DOS SANTOS",
+            "N5737414": "SANDRO DA SILVA CARVALHO",
+            "N5972428": "CRISTIANE HERMOGENES DA SILVA",
+            "N6173055": "JEFFERSON LUIS GONÇALVES COITINHO",
+            "N5932090": "EVILÁZIO ANDRÉ DE MAGALHÃES GOMES PEREIRA",
+            "N0255801": "ELBERTON ANICETO HENRIQUE",
+            "N4014011": "ALAN MARINHO DIAS",
+            "N5923996": "JULIO CESAR SANTOS SOARES"
+        };
 
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -115,8 +131,10 @@
             let mediaGanhos = ganhos.length > 0 ? (totalTempoGanhos / ganhos.length).toFixed(2) : "N/A";
             let mediaPerdas = perdas.length > 0 ? (totalTempoPerdas / perdas.length).toFixed(2) : "N/A";
 
+            const nomeUsuario = loginToName[login.toUpperCase()] || "Nome não encontrado";
+
             document.getElementById("contadores").innerHTML = 
-                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
+                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length} | Nome: ${nomeUsuario}`;
 
             document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
             document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
