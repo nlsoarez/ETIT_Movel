@@ -61,7 +61,7 @@
         }
 
         input {
-            width: 60%;
+            width: 50%;
         }
 
         .botao {
@@ -84,7 +84,7 @@
         }
 
         th, td {
-            padding: 12px;
+            padding: 8px;
             text-align: center;
             border: 1px solid #ddd;
         }
@@ -110,6 +110,12 @@
             font-weight: bold;
             margin-top: 20px;
         }
+
+        .nome {
+            font-size: 16px;
+            margin-top: 10px;
+            color: #444;
+        }
     </style>
 </head>
 <body>
@@ -125,6 +131,8 @@
             <input type="text" id="login" placeholder="Digite o login">
             <button class="botao" onclick="consultarSLA()">Consultar</button>
         </div>
+
+        <div id="nomeUsuario" class="nome"></div>
 
         <h3>Resultados:</h3>
         <div id="contadores" class="contador"></div>
@@ -224,8 +232,9 @@
 
             const nomeUsuario = loginToName[login.toUpperCase()] || "Nome não encontrado";
 
+            document.getElementById("nomeUsuario").innerHTML = `Nome: ${nomeUsuario}`;
             document.getElementById("contadores").innerHTML = 
-                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length} | Nome: ${nomeUsuario}`;
+                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
 
             document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
             document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
