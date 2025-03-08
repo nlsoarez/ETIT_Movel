@@ -6,25 +6,118 @@
     <title>Consulta SLA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 20px; background-color: #f8f9fa; }
-        .container { max-width: 600px; margin: auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        .input-group { display: flex; justify-content: center; gap: 10px; margin-bottom: 15px; }
-        input, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        .botao { background-color: #d52b1e; color: white; border: none; cursor: pointer; font-weight: bold; }
-        .botao:hover { background-color: #b2221a; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: center; }
-        th { background-color: #d52b1e; color: white; }
-        .ganho { background-color: green; color: white; }
-        .perda { background-color: red; color: white; }
-        .contador { font-weight: bold; margin-top: 10px; }
-        .logo { width: 150px; margin-bottom: 20px; }
+        /* Estilo do corpo e fonte */
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f2f2f2;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Container principal */
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        /* Logo */
+        .logo img {
+            width: 150px;
+            margin-bottom: 20px;
+        }
+
+        /* Títulos e subtítulos */
+        h2 {
+            font-size: 24px;
+            color: #D52B1E;
+            margin-bottom: 15px;
+        }
+
+        h3 {
+            font-size: 20px;
+            color: #444;
+            margin-top: 20px;
+        }
+
+        /* Estilo de entrada e botão */
+        .input-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        input {
+            width: 60%;
+        }
+
+        .botao {
+            background-color: #D52B1E;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .botao:hover {
+            background-color: #B2221A;
+        }
+
+        /* Estilo das tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #D52B1E;
+            color: white;
+        }
+
+        /* Classes para diferenciação de ganhos e perdas */
+        .ganho {
+            background-color: #4CAF50;
+            color: white;
+        }
+
+        .perda {
+            background-color: #FF4D4D;
+            color: white;
+        }
+
+        /* Contadores */
+        .contador {
+            font-weight: bold;
+            margin-top: 20px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <img src="https://logos-world.net/wp-content/uploads/2020/12/Claro-Logo.png" alt="Logo Claro" class="logo">
-        <h2>Painel ETIT Empresarial</h2>
+        <div class="logo">
+            <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Claro Brasil Logo">
+        </div>
+        <h2>Painel ETIT Residencial</h2>
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx">
         </div>
@@ -32,6 +125,7 @@
             <input type="text" id="login" placeholder="Digite o login">
             <button class="botao" onclick="consultarSLA()">Consultar</button>
         </div>
+
         <h3>Resultados:</h3>
         <div id="contadores" class="contador"></div>
 
@@ -83,7 +177,6 @@
                 const sheet = workbook.Sheets[sheetName];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
-                console.log("Planilha carregada:", dadosPlanilha); // Debug
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -96,27 +189,23 @@
                 return;
             }
 
-            console.log("Consultando para:", login); // Debug
-
             let ganhos = [];
             let perdas = [];
             let totalTempoGanhos = 0;
             let totalTempoPerdas = 0;
 
             dadosPlanilha.forEach(row => {
-                if (!row || row.length < 9) return; // Ignorar linhas incompletas
+                if (!row || row.length < 9) return;
 
-                let ticket = row[0];  // Coluna A - Tickets
-                let usuarioLogin = row[1]?.toString().trim().toLowerCase(); // Coluna B - Logins
-                let tempo = parseFloat(row[4]) * 1440; // Coluna E - Tempo (convertido para minutos)
+                let ticket = row[0];
+                let usuarioLogin = row[1]?.toString().trim().toLowerCase();
+                let tempo = parseFloat(row[4]) * 1440;
                 let etitHFC1 = row[5];
                 let etitHFC2 = row[6];
                 let etitGPON1 = row[7];
                 let etitGPON2 = row[8];
 
                 if (usuarioLogin.includes(login.toLowerCase())) {
-                    console.log(`Encontrado: Ticket ${ticket}, Tempo: ${tempo}`); // Debug
-
                     let etitHFC = (etitHFC1 == 1 && etitHFC2 == 1) ? 'Ganhou' : (etitHFC1 == 1 && etitHFC2 == 0) ? 'Perdeu' : 'Ignorado';
                     let etitGPON = (etitGPON1 == 1 && etitGPON2 == 1) ? 'Ganhou' : (etitGPON1 == 1 && etitGPON2 == 0) ? 'Perdeu' : 'Ignorado';
 
@@ -152,9 +241,11 @@
                 let row = tabela.insertRow();
                 let cell1 = row.insertCell(0);
                 let cell2 = row.insertCell(1);
-                cell1.innerText = item[0]; // Ticket
-                cell2.innerText = item[1]; // Tempo
+                cell1.innerText = item[0];
+                cell2.innerText = item[1];
                 row.className = classe;
             });
         }
     </script>
+</body>
+</html>
