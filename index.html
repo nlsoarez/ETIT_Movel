@@ -61,7 +61,7 @@
         }
 
         input {
-            width: 50%;
+            width: 40%; /* Caixa do login um pouco menor */
         }
 
         .botao {
@@ -138,7 +138,6 @@
         <div id="contadores" class="contador"></div>
 
         <h3>Dentro do SLA:</h3>
-        <div id="tempoMedioGanhos" class="contador"></div>
         <table id="tabelaGanhos">
             <thead>
                 <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
@@ -147,7 +146,6 @@
         </table>
 
         <h3>Fora do SLA:</h3>
-        <div id="tempoMedioPerdas" class="contador"></div>
         <table id="tabelaPerdas">
             <thead>
                 <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
@@ -234,10 +232,8 @@
 
             document.getElementById("nomeUsuario").innerHTML = `Nome: ${nomeUsuario}`;
             document.getElementById("contadores").innerHTML = 
-                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
-
-            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
-            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
+                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length} | ` +
+                `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b> | Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
