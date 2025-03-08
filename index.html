@@ -111,6 +111,17 @@
             margin-top: 20px;
         }
 
+        /* Separando seções */
+        .resultados {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .section {
+            margin-top: 20px;
+        }
+
         .nome {
             font-size: 16px;
             margin-top: 10px;
@@ -134,24 +145,32 @@
 
         <div id="nomeUsuario" class="nome"></div>
 
-        <h3>Resultados:</h3>
-        <div id="contadores" class="contador"></div>
+        <div class="resultados">
+            <div class="section" id="contadores">
+                <h3>Resultados:</h3>
+                <div id="resultadosMain"></div>
+            </div>
 
-        <h3>Dentro do SLA:</h3>
-        <table id="tabelaGanhos">
-            <thead>
-                <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+            <div class="section" id="tabelaGanhos">
+                <h3>Dentro do SLA:</h3>
+                <table>
+                    <thead>
+                        <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
 
-        <h3>Fora do SLA:</h3>
-        <table id="tabelaPerdas">
-            <thead>
-                <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+            <div class="section" id="tabelaPerdas">
+                <h3>Fora do SLA:</h3>
+                <table>
+                    <thead>
+                        <tr><th>Ticket</th><th>Tempo (minutos)</th></tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <script>
@@ -232,8 +251,10 @@
 
             document.getElementById("nomeUsuario").innerHTML = `Nome: ${nomeUsuario}`;
             document.getElementById("contadores").innerHTML = 
-                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length} | ` +
-                `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b> | Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
+                `<div><strong>Total Dentro do SLA:</strong> ${ganhos.length}</div>
+                <div><strong>Total Fora do SLA:</strong> ${perdas.length}</div>
+                <div><strong>Tempo Médio Dentro do SLA:</strong> <b>${mediaGanhos}</b></div>
+                <div><strong>Tempo Médio Fora do SLA:</strong> <b>${mediaPerdas}</b></div>`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
