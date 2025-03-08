@@ -3,150 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta SLA - Planilha Excel</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-        }
-        input, button {
-            padding: 10px;
-            font-size: 16px;
-            margin: 10px 0;
-        }
-        .resultados {
-            margin-top: 20px;
-        }
-        .resultado-item {
-            margin-bottom: 10px;
-        }
-    </style>
+    <title>Portal de Consulta de Outages</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>Consulta de SLA - Tempo de Perda</h1>
-
-    <label for="loginInput">Digite o Login:</label>
-    <input type="text" id="loginInput" placeholder="Ex: n5577565">
-    <button onclick="consultarSLA()">Consultar</button>
-
-    <div class="resultados" id="resultados"></div>
-
-    <input type="file" id="upload" accept=".xlsx, .xls">
-    <button onclick="handleFile()">Carregar Arquivo Excel</button>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.1/xlsx.full.min.js"></script>
-
-    <script>
-        let planilha = [];
-
-        function handleFile() {
-            const fileInput = document.getElementById('upload');
-            const file = fileInput.files[0];
-
-            if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls'))) {
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    try {
-                        const data = event.target.result;
-                        const workbook = XLSX.read(data, { type: 'binary' });
-                        console.log("Planilha carregada:", workbook);
-
-                        // Supondo que os dados estão na primeira aba
-                        const sheetName = workbook.SheetNames[0];
-                        const worksheet = workbook.Sheets[sheetName];
-
-                        // Converter os dados da planilha para um formato JSON
-                        planilha = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        console.log("Planilha convertida para JSON:", planilha);
-                    } catch (error) {
-                        console.error("Erro ao processar o arquivo Excel:", error);
-                    }
-                };
-                reader.readAsBinaryString(file);
-            } else {
-                alert('Por favor, carregue um arquivo Excel válido (.xlsx ou .xls).');
-            }
-        }
-
-        function consultarSLA() {
-            const login = document.getElementById('loginInput').value.toLowerCase();
-            console.log("Consultando para o login:", login);
-
-            if (!login) {
-                alert('Por favor, insira um login válido.');
-                return;
-            }
-
-            let resultados = [];
-            let totalTempo = 0;
-            let totalPerdas = 0;
-
-            if (planilha.length === 0) {
-                alert('Por favor, carregue um arquivo Excel primeiro.');
-                return;
-            }
-
-            // Processar as linhas da planilha
-            planilha.forEach(function(linha, index) {
-                const loginCelula = linha[1]?.toLowerCase(); // Login na coluna B
-                const tempo = linha[6]; // Tempo está na coluna G (F para HFC, G para GPON)
-
-                // Verificar se o login corresponde e se o tempo é válido
-                if (loginCelula === login) {
-                    if (typeof tempo === 'string' || tempo instanceof String) {
-                        const tempoSplit = tempo.split(':'); // Separar tempo no formato hh:mm:ss
-
-                        // Verificar se o tempo está no formato correto
-                        if (tempoSplit.length === 3) {
-                            const horas = parseInt(tempoSplit[0], 10);
-                            const minutos = parseInt(tempoSplit[1], 10);
-                            const segundos = parseInt(tempoSplit[2], 10);
-
-                            const tempoEmMinutos = horas * 60 + minutos + (segundos / 60);
-                            totalTempo += tempoEmMinutos;
-                            totalPerdas++;
-
-                            resultados.push({
-                                outage: linha[0],  // Coluna A para Outage
-                                login: linha[1],    // Coluna B para Login
-                                tempo: tempo,       // Tempo original
-                                tempoEmMinutos: tempoEmMinutos.toFixed(2) // Tempo em minutos
-                            });
-                        } else {
-                            console.log("Tempo inválido na linha " + (index + 1) + ": " + tempo);
-                        }
-                    } else {
-                        console.log("Tempo não encontrado ou não é uma string na linha " + (index + 1) + ": ", linha);
-                    }
-                }
-            });
-
-            // Exibir os resultados
-            const resultadosDiv = document.getElementById('resultados');
-            resultadosDiv.innerHTML = ''; // Limpar resultados anteriores
-
-            if (resultados.length > 0) {
-                resultados.forEach(function(resultado) {
-                    const resultadoDiv = document.createElement('div');
-                    resultadoDiv.classList.add('resultado-item');
-                    resultadoDiv.innerHTML = "Outage: " + resultado.outage + " | Tempo: " + resultado.tempoEmMinutos + " minutos";
-                    resultadosDiv.appendChild(resultadoDiv);
-                });
-
-                // Calcular a média
-                const mediaTempo = totalTempo / totalPerdas;
-                const mediaDiv = document.createElement('div');
-                mediaDiv.classList.add('resultado-item');
-                mediaDiv.innerHTML = "<strong>Média do tempo de perdas: " + mediaTempo.toFixed(2) + " minutos</strong>";
-                resultadosDiv.appendChild(mediaDiv);
-
-            } else {
-                const noResultsDiv = document.createElement('div');
-                noResultsDiv.classList.add('resultado-item');
-                noResultsDiv.innerHTML = "<strong>Nenhum resultado encontrado para o login " + login + ".</strong>";
-                resultadosDiv.appendChild(noResultsDiv);
-            }
-        }
-    </script>
+   h1>
+    <form id="upload-form" action="upload.php" method="post" enctype="multipart/form-data">
+        <label for="file">Arquivo Excel:</label>
+        <input type="file" id="file" name="file" accept=".xlsx" required>
+        <button type="submit">Upload</button>
+    </form>
+    <form id="consulta-form" style="display:none;">
+        <label for="login">Login:</label>
+        <input type="text" id="login" name="login" required>
+        <button type="submit">Consultar</button>
+    </form>
+    <div id="resultado"></div>
+    <script src="script.js"></script>
 </body>
 </html>
