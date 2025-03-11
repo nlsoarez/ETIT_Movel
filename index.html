@@ -1,75 +1,34 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Indicadores</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .container { display: flex; flex-wrap: wrap; }
-        .chart-container { width: 45%; margin: 10px; }
-        .input-container { margin-bottom: 20px; }
-    </style>
+    <link rel="stylesheet" href="style.css">
+    <script defer src="script.js"></script>
 </head>
 <body>
+
     <h1>Painel de Indicadores</h1>
-    
-    <div class="input-container">
-        <label for="fileUpload">Upload de Planilha (DPA, ETIT, ASSERTIVIDADE, PRODUTIVIDADE):</label>
-        <input type="file" id="fileUpload" accept=".csv, .xlsx">
-    </div>
-    
-    <div class="input-container">
-        <label>Preenchimento Manual:</label>
-        <input type="number" id="manualDPA" placeholder="DPA">
-        <input type="number" id="manualChat" placeholder="Chat">
-        <input type="number" id="manualCertificado" placeholder="Analista Certificado">
-        <button onclick="updateManualData()">Atualizar</button>
-    </div>
-    
-    <div class="container">
-        <div class="chart-container">
-            <canvas id="graficoDPA"></canvas>
-        </div>
-        <div class="chart-container">
-            <canvas id="graficoETIT"></canvas>
-        </div>
-        <div class="chart-container">
-            <canvas id="graficoAssertividade"></canvas>
-        </div>
-        <div class="chart-container">
-            <canvas id="graficoProdutividade"></canvas>
-        </div>
+
+    <div class="upload-container">
+        <label for="fileInput">Upload da Planilha:</label>
+        <input type="file" id="fileInput">
     </div>
 
-    <script>
-        function createChart(canvasId, label, data) {
-            new Chart(document.getElementById(canvasId), {
-                type: 'bar',
-                data: {
-                    labels: ['Residencial', 'Empresarial', 'Móvel'],
-                    datasets: [{
-                        label: label,
-                        data: data,
-                        backgroundColor: ['red', 'blue', 'green']
-                    }]
-                }
-            });
-        }
-        
-        function updateManualData() {
-            let dpa = document.getElementById('manualDPA').value || 0;
-            let chat = document.getElementById('manualChat').value || 0;
-            let certificado = document.getElementById('manualCertificado').value || 0;
-            
-            createChart('graficoDPA', 'DPA', [dpa, dpa, dpa]);
-            createChart('graficoETIT', 'ETIT', [50, 70, 80]);
-            createChart('graficoAssertividade', 'Assertividade', [90, 85, 98]);
-            createChart('graficoProdutividade', 'Produtividade', [60, 75, 82]);
-        }
-        
-        updateManualData();
-    </script>
+    <div class="indicadores-container">
+        <h2>Indicadores Gerais</h2>
+        <canvas id="chartDPA"></canvas>
+        <canvas id="chartChat"></canvas>
+        <canvas id="chartAnalistaCertificado"></canvas>
+    </div>
+
+    <div class="indicadores-container">
+        <h2>Indicadores por Mercado</h2>
+        <canvas id="chartEmpresarial"></canvas>
+        <canvas id="chartMovel"></canvas>
+        <canvas id="chartResidencial"></canvas>
+    </div>
+
 </body>
 </html>
