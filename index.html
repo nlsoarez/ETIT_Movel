@@ -7,21 +7,33 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        .container { width: 90%; margin: auto; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
+        .container { width: 90%; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
         canvas { max-width: 100%; }
         .input-container { margin-bottom: 20px; }
+        select, input { padding: 10px; margin: 10px; border-radius: 5px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
     <h1>Painel de Indicadores</h1>
     <div class="input-container">
         <input type="file" id="fileInput" accept=".xlsx, .csv">
+        <select id="marketFilter">
+            <option value="">Todos os Mercados</option>
+            <option value="Móvel">Móvel</option>
+            <option value="Residencial">Residencial</option>
+            <option value="Empresarial">Empresarial</option>
+        </select>
+        <select id="analystFilter">
+            <option value="">Todos os Analistas</option>
+        </select>
     </div>
     <div class="container">
         <canvas id="chart"></canvas>
     </div>
     <script>
+        let rawData = [];
+
         document.getElementById('fileInput').addEventListener('change', function(event) {
             const file = event.target.files[0];
             const reader = new FileReader();
@@ -30,20 +42,43 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheetName = workbook.SheetNames[0];
                 const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-                processData(sheet);
+                rawData = sheet.slice(1);
+                populateAnalystFilter();
+                filterData();
             };
             reader.readAsArrayBuffer(file);
         });
 
-        function processData(sheet) {
-            const labels = sheet.slice(1).map(row => row[0]);
-            const values = sheet.slice(1).map(row => row[1]);
+        function populateAnalystFilter() {
+            const analystFilter = document.getElementById('analystFilter');
+            analystFilter.innerHTML = '<option value="">Todos os Analistas</option>';
+            const uniqueAnalysts = [...new Set(rawData.map(row => row[2]))];
+            uniqueAnalysts.forEach(analyst => {
+                const option = document.createElement('option');
+                option.value = analyst;
+                option.textContent = analyst;
+                analystFilter.appendChild(option);
+            });
+        }
+
+        function filterData() {
+            const market = document.getElementById('marketFilter').value;
+            const analyst = document.getElementById('analystFilter').value;
+            const filteredData = rawData.filter(row => 
+                (!market || row[1] === market) && 
+                (!analyst || row[2] === analyst)
+            );
+            const labels = filteredData.map(row => row[0]);
+            const values = filteredData.map(row => row[3]);
             renderChart(labels, values);
         }
 
         function renderChart(labels, values) {
             const ctx = document.getElementById('chart').getContext('2d');
-            new Chart(ctx, {
+            if (window.myChart) {
+                window.myChart.destroy();
+            }
+            window.myChart = new Chart(ctx, {
                 type: 'bar',
                 data: {
                     labels: labels,
@@ -61,6 +96,9 @@
                 }
             });
         }
+
+        document.getElementById('marketFilter').addEventListener('change', filterData);
+        document.getElementById('analystFilter').addEventListener('change', filterData);
     </script>
 </body>
 </html>
