@@ -1,39 +1,66 @@
-document.getElementById('fileInput').addEventListener('change', function(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+// Armazena os dados localmente
+let indicadores = JSON.parse(localStorage.getItem("indicadores")) || {};
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        const data = e.target.result;
-        processarPlanilha(data);
-    };
-    reader.readAsBinaryString(file);
-});
+// Função para salvar os dados manualmente inseridos
+function salvarIndicador() {
+    const indicador = document.getElementById('indicador').value;
+    const mes = document.getElementById('mes').value;
+    const valor = document.getElementById('valor').value;
 
-function processarPlanilha(data) {
-    // Aqui, adicionar a lógica para converter a planilha e armazenar os dados
-    console.log("Planilha carregada:", data);
-    alert("Planilha carregada com sucesso!");
+    if (!valor) {
+        alert("Por favor, insira um valor.");
+        return;
+    }
+
+    if (!indicadores[indicador]) {
+        indicadores[indicador] = {};
+    }
+
+    indicadores[indicador][mes] = parseInt(valor);
+
+    localStorage.setItem("indicadores", JSON.stringify(indicadores));
+    alert("Indicador salvo!");
+    atualizarGraficos();
 }
 
-// Inicialização dos gráficos (exemplo)
-document.addEventListener('DOMContentLoaded', function() {
-    criarGrafico("chartDPA", "DPA Mensal", [80, 85, 90, 92]);
-    criarGrafico("chartChat", "Chat Mensal", [75, 78, 80, 85]);
-    criarGrafico("chartAnalistaCertificado", "Analistas Certificados", [50, 55, 60, 65]);
-});
+// Função para gerar gráficos
+function atualizarGraficos() {
+    const ctxDPA = document.getElementById('chartDPA').getContext('2d');
+    criarGrafico(ctxDPA, "DPA", indicadores["DPA"] || {});
 
-function criarGrafico(id, titulo, dados) {
-    const ctx = document.getElementById(id).getContext('2d');
+    const ctxChat = document.getElementById('chartChat').getContext('2d');
+    criarGrafico(ctxChat, "Chat", indicadores["Chat"] || {});
+
+    const ctxCert = document.getElementById('chartAnalistaCertificado').getContext('2d');
+    criarGrafico(ctxCert, "Analista Certificado", indicadores["Analista Certificado"] || {});
+
+    const ctxEmpresarial = document.getElementById('chartEmpresarial').getContext('2d');
+    criarGrafico(ctxEmpresarial, "Empresarial", indicadores["ETIT RAL"] || {});
+
+    const ctxMovel = document.getElementById('chartMovel').getContext('2d');
+    criarGrafico(ctxMovel, "Móvel", indicadores["ETIT Pessoal"] || {});
+
+    const ctxResidencial = document.getElementById('chartResidencial').getContext('2d');
+    criarGrafico(ctxResidencial, "Residencial", indicadores["ETIT GPON"] || {});
+}
+
+// Função para criar gráfico
+function criarGrafico(ctx, titulo, dados) {
+    const labels = Object.keys(dados);
+    const valores = Object.values(dados);
+
     new Chart(ctx, {
         type: 'bar',
         data: {
-            labels: ["Jan", "Fev", "Mar", "Abr"],
+            labels: labels,
             datasets: [{
                 label: titulo,
-                data: dados,
+                data: valores,
                 backgroundColor: "rgba(54, 162, 235, 0.6)"
             }]
         }
     });
 }
+
+// Atualiza os gráficos ao carregar a página
+document.addEventListener('DOMContentLoaded', atualizarGraficos);
