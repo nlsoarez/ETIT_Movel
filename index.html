@@ -1,104 +1,75 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Indicadores</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; }
-        .container { width: 90%; margin: auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0,0,0,0.1); }
-        canvas { max-width: 100%; }
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { display: flex; flex-wrap: wrap; }
+        .chart-container { width: 45%; margin: 10px; }
         .input-container { margin-bottom: 20px; }
-        select, input { padding: 10px; margin: 10px; border-radius: 5px; border: 1px solid #ccc; }
     </style>
 </head>
 <body>
     <h1>Painel de Indicadores</h1>
+    
     <div class="input-container">
-        <input type="file" id="fileInput" accept=".xlsx, .csv">
-        <select id="marketFilter">
-            <option value="">Todos os Mercados</option>
-            <option value="Móvel">Móvel</option>
-            <option value="Residencial">Residencial</option>
-            <option value="Empresarial">Empresarial</option>
-        </select>
-        <select id="analystFilter">
-            <option value="">Todos os Analistas</option>
-        </select>
+        <label for="fileUpload">Upload de Planilha (DPA, ETIT, ASSERTIVIDADE, PRODUTIVIDADE):</label>
+        <input type="file" id="fileUpload" accept=".csv, .xlsx">
     </div>
+    
+    <div class="input-container">
+        <label>Preenchimento Manual:</label>
+        <input type="number" id="manualDPA" placeholder="DPA">
+        <input type="number" id="manualChat" placeholder="Chat">
+        <input type="number" id="manualCertificado" placeholder="Analista Certificado">
+        <button onclick="updateManualData()">Atualizar</button>
+    </div>
+    
     <div class="container">
-        <canvas id="chart"></canvas>
+        <div class="chart-container">
+            <canvas id="graficoDPA"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="graficoETIT"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="graficoAssertividade"></canvas>
+        </div>
+        <div class="chart-container">
+            <canvas id="graficoProdutividade"></canvas>
+        </div>
     </div>
+
     <script>
-        let rawData = [];
-
-        document.getElementById('fileInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheetName = workbook.SheetNames[0];
-                const sheet = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
-                rawData = sheet.slice(1);
-                populateAnalystFilter();
-                filterData();
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        function populateAnalystFilter() {
-            const analystFilter = document.getElementById('analystFilter');
-            analystFilter.innerHTML = '<option value="">Todos os Analistas</option>';
-            const uniqueAnalysts = [...new Set(rawData.map(row => row[2]))];
-            uniqueAnalysts.forEach(analyst => {
-                const option = document.createElement('option');
-                option.value = analyst;
-                option.textContent = analyst;
-                analystFilter.appendChild(option);
-            });
-        }
-
-        function filterData() {
-            const market = document.getElementById('marketFilter').value;
-            const analyst = document.getElementById('analystFilter').value;
-            const filteredData = rawData.filter(row => 
-                (!market || row[1] === market) && 
-                (!analyst || row[2] === analyst)
-            );
-            const labels = filteredData.map(row => row[0]);
-            const values = filteredData.map(row => row[3]);
-            renderChart(labels, values);
-        }
-
-        function renderChart(labels, values) {
-            const ctx = document.getElementById('chart').getContext('2d');
-            if (window.myChart) {
-                window.myChart.destroy();
-            }
-            window.myChart = new Chart(ctx, {
+        function createChart(canvasId, label, data) {
+            new Chart(document.getElementById(canvasId), {
                 type: 'bar',
                 data: {
-                    labels: labels,
+                    labels: ['Residencial', 'Empresarial', 'Móvel'],
                     datasets: [{
-                        label: 'Indicadores',
-                        data: values,
-                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
-                        borderColor: 'rgba(75, 192, 192, 1)',
-                        borderWidth: 1
+                        label: label,
+                        data: data,
+                        backgroundColor: ['red', 'blue', 'green']
                     }]
-                },
-                options: {
-                    responsive: true,
-                    scales: { y: { beginAtZero: true } }
                 }
             });
         }
-
-        document.getElementById('marketFilter').addEventListener('change', filterData);
-        document.getElementById('analystFilter').addEventListener('change', filterData);
+        
+        function updateManualData() {
+            let dpa = document.getElementById('manualDPA').value || 0;
+            let chat = document.getElementById('manualChat').value || 0;
+            let certificado = document.getElementById('manualCertificado').value || 0;
+            
+            createChart('graficoDPA', 'DPA', [dpa, dpa, dpa]);
+            createChart('graficoETIT', 'ETIT', [50, 70, 80]);
+            createChart('graficoAssertividade', 'Assertividade', [90, 85, 98]);
+            createChart('graficoProdutividade', 'Produtividade', [60, 75, 82]);
+        }
+        
+        updateManualData();
     </script>
 </body>
 </html>
