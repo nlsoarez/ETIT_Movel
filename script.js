@@ -7,7 +7,6 @@ function buscarDados() {
     let resultadoDiv = document.getElementById("resultado");
     let tabelaDados = document.getElementById("tabelaDados");
     let analise = document.getElementById("analise");
-    let btnAjuda = document.getElementById("btnAjuda");
 
     if (!login) {
         alert("Por favor, digite uma matrícula válida.");
@@ -55,18 +54,11 @@ function buscarDados() {
     
     if (analista.Total > mediaEquipe.Total) {
         analise.innerText = `Parabéns! Você está acima da média da equipe. Seus pontos fortes: ${pontosFortes.join(", " )}. Continue assim!`;
-        btnAjuda.classList.add("hidden");
     } else if (analista.Total < mediaEquipe.Total) {
         analise.innerText = `Atenção! Você está abaixo da média. Pontos a melhorar: ${pontosFracos.join(", " )}. Foco nesses indicadores!`;
-        btnAjuda.classList.remove("hidden");
     } else {
         analise.innerText = "Você está dentro da média da equipe. Continue monitorando seus indicadores!";
-        btnAjuda.classList.add("hidden");
     }
 
     resultadoDiv.classList.remove("hidden");
-}
-
-function solicitarAjuda() {
-    alert("Entraremos em contato para auxiliar na sua melhoria de desempenho.");
 }
