@@ -1,4 +1,4 @@
-body {
+body { 
     font-family: Arial, sans-serif;
     background-color: #f5f5f5;
     display: flex;
@@ -42,6 +42,7 @@ input {
     transition: 0.3s;
 }
 
+/* Efeito de foco no input */
 input:focus {
     border-color: #c00;
     outline: none;
@@ -50,7 +51,7 @@ input:focus {
 
 button {
     width: 100%;
-    background: linear-gradient(90deg, #c00, #900);
+    background-color: #c00;
     color: white;
     border: none;
     padding: 12px;
@@ -61,10 +62,12 @@ button {
     font-weight: bold;
 }
 
+/* Efeito ao passar o mouse */
 button:hover {
-    background: linear-gradient(90deg, #900, #600);
+    background-color: #900;
 }
 
+/* Efeito de clique */
 button:active {
     transform: scale(0.98);
 }
@@ -94,6 +97,7 @@ p {
     color: #666;
 }
 
+/* Estilização da tabela */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -110,30 +114,37 @@ th, td {
     font-size: 14px;
 }
 
+/* Estilo do cabeçalho da tabela */
 th {
     background-color: #c00;
     color: white;
     font-weight: bold;
 }
 
+/* Linhas alternadas na tabela */
 tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-tbody tr.ponto-fraco {
-    background-color: #ffcccc;
+/* Cores para indicadores positivos e negativos */
+.ponto-forte {
+    background-color: #c8e6c9 !important;
 }
 
-tbody tr.ponto-forte {
-    background-color: #ccffcc;
+.ponto-fraco {
+    background-color: #ffcdd2 !important;
 }
 
-.analise-container {
+/* Melhorando a exibição da análise */
+#analise-container {
     margin-top: 15px;
-    padding: 10px;
-    border-radius: 5px;
-    background: #f1f1f1;
+    padding: 15px;
+    background: #e3f2fd;
+    border-radius: 8px;
     text-align: center;
+    font-size: 16px;
+    font-weight: bold;
+    color: #01579b;
 }
 
 .atualizacao {
@@ -143,6 +154,7 @@ tbody tr.ponto-forte {
     text-align: center;
 }
 
+/* Responsividade */
 @media (max-width: 500px) {
     .container {
         padding: 15px;
