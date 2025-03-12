@@ -1,18 +1,17 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Indicadores - Claro</title>
+    <title>Consulta de Indicadores</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <img src="claro-logo.png" alt="Claro" class="logo">
+        <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Logo Claro" class="logo">
         <h2>Consulta de Indicadores</h2>
         <input type="text" id="login" placeholder="Digite a matrícula">
-        <button class="btn-consultar" onclick="buscarDados()">Consultar</button>
-        
+        <button onclick="buscarDados()">Consultar</button>
         <div id="resultado" class="hidden">
             <h3>Resultados</h3>
             <table>
@@ -25,10 +24,8 @@
                 <tbody id="tabelaDados"></tbody>
             </table>
             <p id="analise"></p>
-            <button id="btnAjuda" class="btn-ajuda hidden" onclick="solicitarAjuda()">Preciso de Ajuda</button>
         </div>
-        
-        <p class="atualizacao">Última atualização: 12/03</p>
+        <p class="atualizacao">Última atualização: 09/03</p>
     </div>
     <script src="script.js"></script>
 </body>
