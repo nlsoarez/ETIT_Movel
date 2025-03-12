@@ -3,17 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Produtividade</title>
+    <title>Consulta de Indicadores - Claro</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Consulta de Produtividade</h1>
-        <input type="text" id="login" placeholder="Digite seu login">
-        <button onclick="buscarDados()">Consultar</button>
+        <img src="claro-logo.png" alt="Claro" class="logo">
+        <h2>Consulta de Indicadores</h2>
+        <input type="text" id="login" placeholder="Digite a matrícula">
+        <button class="btn-consultar" onclick="buscarDados()">Consultar</button>
         
         <div id="resultado" class="hidden">
-            <h2>Resultados</h2>
+            <h3>Resultados</h3>
             <table>
                 <thead>
                     <tr>
@@ -24,8 +25,10 @@
                 <tbody id="tabelaDados"></tbody>
             </table>
             <p id="analise"></p>
-            <button id="btnAjuda" class="hidden" onclick="solicitarAjuda()">Ajuda Personalizada</button>
+            <button id="btnAjuda" class="btn-ajuda hidden" onclick="solicitarAjuda()">Preciso de Ajuda</button>
         </div>
+        
+        <p class="atualizacao">Última atualização: 12/03</p>
     </div>
     <script src="script.js"></script>
 </body>
