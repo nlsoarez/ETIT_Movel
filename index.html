@@ -1,70 +1,66 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Painel de Indicadores</title>
-    <link rel="stylesheet" href="style.css">
-    <script defer src="script.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>Portal de Produtividade</title>
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-
-    <h1>Painel de Indicadores</h1>
-
-    <div class="upload-container">
-        <label for="fileInput">Upload da Planilha:</label>
-        <input type="file" id="fileInput">
+    <div class="container">
+        <h1>Portal de Produtividade</h1>
+        <label for="login">Digite seu login:</label>
+        <input type="text" id="login" placeholder="Ex: N6071740">
+        <button onclick="buscarDados()">Buscar</button>
+        
+        <div id="resultado" class="hidden">
+            <h2>Resultados</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Indicador</th>
+                        <th>Valor</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaDados"></tbody>
+            </table>
+            <p id="analise"></p>
+        </div>
     </div>
+    
+    <script>
+        const dadosProdutividade = {
+            "N6071740": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 418, "TOA: 1ª Int.": 0, "NICE: Recebido": 1, "NICE: Atendido": 1, "NICE: Realizado": 11, "Total": 431 },
+            "N6173067": { "Abertura RAL": 61, "RAL": 0, "REC": 0, "Remedy Móvel": 1260, "TOA: 1ª Int.": 3, "NICE: Recebido": 3, "NICE: Atendido": 3, "NICE: Realizado": 16, "Total": 1346 },
+            "N6172207": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 1671, "TOA: 1ª Int.": 4, "NICE: Recebido": 1, "NICE: Atendido": 1, "NICE: Realizado": 0, "Total": 1677 },
+            "N6104793": { "Abertura RAL": 52, "RAL": 1, "REC": 0, "Remedy Móvel": 880, "TOA: 1ª Int.": 0, "NICE: Recebido": 2, "NICE: Atendido": 0, "NICE: Realizado": 24, "Total": 959 },
+            "N5931955": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 0, "TOA: 1ª Int.": 39, "NICE: Recebido": 0, "NICE: Atendido": 0, "NICE: Realizado": 7, "Total": 46 }
+        };
 
-    <div class="form-container">
-        <h2>Inserção Manual de Dados</h2>
-        <label for="indicador">Indicador:</label>
-        <select id="indicador">
-            <option value="DPA">DPA</option>
-            <option value="Chat">Chat</option>
-            <option value="Analista Certificado">Analista Certificado</option>
-            <option value="ETIT RAL">ETIT por evento RAL</option>
-            <option value="ETIT REC">ETIT por evento REC</option>
-            <option value="ETIT Pessoal">ETIT Pessoal</option>
-            <option value="ETIT SOOS">ETIT SOOS</option>
-            <option value="ETIT GPON">ETIT Outage GPON</option>
-            <option value="ME HFC">ME HFC</option>
-            <option value="ME GPON">ME GPON</option>
-            <option value="Logs Reprogramados">Logs Reprogramados</option>
-        </select>
-
-        <label for="mes">Mês:</label>
-        <select id="mes">
-            <option value="Jan">Jan</option>
-            <option value="Fev">Fev</option>
-            <option value="Mar">Mar</option>
-            <option value="Abr">Abr</option>
-            <option value="Mai">Mai</option>
-            <option value="Jun">Jun</option>
-            <option value="Jul">Jul</option>
-            <option value="Ago">Ago</option>
-            <option value="Set">Set</option>
-            <option value="Out">Out</option>
-            <option value="Nov">Nov</option>
-            <option value="Dez">Dez</option>
-        </select>
-
-        <label for="valor">Valor:</label>
-        <input type="number" id="valor" placeholder="Digite o valor">
-
-        <button onclick="salvarIndicador()">Salvar</button>
-    </div>
-
-    <div class="indicadores-container">
-        <h2>Gráficos de Indicadores</h2>
-        <canvas id="chartDPA"></canvas>
-        <canvas id="chartChat"></canvas>
-        <canvas id="chartAnalistaCertificado"></canvas>
-        <canvas id="chartEmpresarial"></canvas>
-        <canvas id="chartMovel"></canvas>
-        <canvas id="chartResidencial"></canvas>
-    </div>
-
+        function buscarDados() {
+            const login = document.getElementById("login").value;
+            const resultadoDiv = document.getElementById("resultado");
+            const tabelaDados = document.getElementById("tabelaDados");
+            const analise = document.getElementById("analise");
+            
+            if (dadosProdutividade[login]) {
+                const dados = dadosProdutividade[login];
+                tabelaDados.innerHTML = "";
+                
+                Object.keys(dados).forEach(indicador => {
+                    const row = `<tr><td>${indicador}</td><td>${dados[indicador]}</td></tr>`;
+                    tabelaDados.innerHTML += row;
+                });
+                
+                const mediaTotal = Object.values(dadosProdutividade).reduce((sum, obj) => sum + obj["Total"], 0) / Object.keys(dadosProdutividade).length;
+                analise.textContent = dados.Total >= mediaTotal ? "Você está na média ou acima da equipe." : "Você está abaixo da média, foque em melhorar sua produtividade.";
+                
+                resultadoDiv.classList.remove("hidden");
+            } else {
+                resultadoDiv.classList.add("hidden");
+                alert("Login não encontrado!");
+            }
+        }
+    </script>
 </body>
 </html>
