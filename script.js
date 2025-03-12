@@ -7,11 +7,21 @@ const dadosProdutividade = {
     "F204763": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 1793, "TOA: 1ª Int.": 5, "NICE: Recebido": 10, "NICE: Atendido": 9, "NICE: Realizado": 28, "Total": 1845 }
 };
 
+function calcularMediaGeral() {
+    let soma = 0;
+    let totalAnalistas = Object.keys(dadosProdutividade).length;
+    Object.values(dadosProdutividade).forEach(dados => {
+        soma += dados["Total"];
+    });
+    return soma / totalAnalistas;
+}
+
 function buscarDados() {
     const login = document.getElementById("login").value;
     const resultadoDiv = document.getElementById("resultado");
     const tabelaDados = document.getElementById("tabelaDados");
     const analise = document.getElementById("analise");
+    const btnAjuda = document.getElementById("btnAjuda");
     
     if (dadosProdutividade[login]) {
         const dados = dadosProdutividade[login];
@@ -22,10 +32,36 @@ function buscarDados() {
             tabelaDados.innerHTML += row;
         });
         
-        analise.textContent = `Seu desempenho foi analisado. Confira os detalhes acima.`;
+        const mediaGeral = calcularMediaGeral();
+        const diferenca = dados["Total"] - mediaGeral;
+        
+        if (diferenca >= 0) {
+            analise.textContent = `Parabéns! Seu desempenho está dentro ou acima da média da equipe.`;
+        } else {
+            analise.textContent = `Você está abaixo da média da equipe. Fique atento aos seguintes pontos:`;
+            const pontosFracos = [];
+            
+            Object.keys(dados).forEach(indicador => {
+                if (indicador !== "Total" && dados[indicador] < mediaGeral / 8) {
+                    pontosFracos.push(indicador);
+                }
+            });
+            
+            if (pontosFracos.length > 0) {
+                analise.textContent += `
+                 Você pode focar mais em: ${pontosFracos.join(", ")}.`;
+            }
+        }
+        
         resultadoDiv.classList.remove("hidden");
+        btnAjuda.classList.remove("hidden");
     } else {
         resultadoDiv.classList.add("hidden");
+        btnAjuda.classList.add("hidden");
         alert("Login não encontrado!");
     }
+}
+
+function solicitarAjuda() {
+    alert("Um supervisor será notificado para ajudá-lo a melhorar seu desempenho!");
 }
