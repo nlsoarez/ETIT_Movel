@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +8,9 @@
 </head>
 <body>
     <div class="container">
-        <h1>Portal de Produtividade</h1>
-        <label for="login">Digite seu login:</label>
-        <input type="text" id="login" placeholder="Ex: N9999999">
-        <button onclick="buscarDados()">Buscar</button>
+        <h1>Consulta de Produtividade</h1>
+        <input type="text" id="login" placeholder="Digite seu login">
+        <button onclick="buscarDados()">Consultar</button>
         
         <div id="resultado" class="hidden">
             <h2>Resultados</h2>
@@ -25,9 +24,9 @@
                 <tbody id="tabelaDados"></tbody>
             </table>
             <p id="analise"></p>
+            <button id="btnAjuda" class="hidden" onclick="solicitarAjuda()">Ajuda Personalizada</button>
         </div>
     </div>
-    
     <script src="script.js"></script>
 </body>
 </html>
