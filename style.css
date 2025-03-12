@@ -1,7 +1,6 @@
 body {
     font-family: Arial, sans-serif;
-    background-color: #E60012;
-    color: #fff;
+    background-color: #f8f9fa;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -11,79 +10,77 @@ body {
 
 .container {
     background: #fff;
-    color: #333;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
     text-align: center;
-    width: 90%;
-    max-width: 500px;
+    width: 350px;
 }
 
-h1 {
-    color: #E60012;
+.logo {
+    width: 100px;
+    margin-bottom: 10px;
+}
+
+h2 {
+    color: #d30000;
+    margin-bottom: 20px;
 }
 
 input {
-    width: 100%;
+    width: calc(100% - 20px);
     padding: 10px;
-    margin: 10px 0;
+    margin-bottom: 10px;
     border: 1px solid #ccc;
     border-radius: 5px;
+    text-align: center;
 }
 
-button {
-    background-color: #E60012;
-    color: #fff;
-    border: none;
-    padding: 10px;
+.btn-consultar {
     width: 100%;
+    padding: 10px;
+    background-color: #d30000;
+    color: white;
+    border: none;
+    border-radius: 5px;
     cursor: pointer;
     font-size: 16px;
-    border-radius: 5px;
-    margin-top: 10px;
 }
 
-button:hover {
-    background-color: #B4000F;
+.btn-consultar:hover {
+    background-color: #b30000;
 }
 
 .hidden {
     display: none;
 }
 
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 15px;
+#resultado {
+    margin-top: 20px;
 }
 
-table, th, td {
-    border: 1px solid #ccc;
-}
-
-th, td {
-    padding: 10px;
-    text-align: center;
-}
-
-th {
-    background-color: #E60012;
-    color: #fff;
-}
-
-#analise {
-    margin-top: 15px;
-    font-weight: bold;
-    color: #E60012;
-}
-
-#btnAjuda {
+p {
     margin-top: 10px;
-    background-color: #0057B7;
-    display: none;
+    font-weight: bold;
 }
 
-#btnAjuda:hover {
-    background-color: #004494;
+.btn-ajuda {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #ff9800;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.btn-ajuda:hover {
+    background-color: #e68900;
+}
+
+.atualizacao {
+    margin-top: 20px;
+    font-size: 12px;
+    color: #777;
 }
