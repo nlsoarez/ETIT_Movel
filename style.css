@@ -13,15 +13,19 @@ body {
     background: #fff;
     color: #333;
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.2);
     text-align: center;
     width: 90%;
     max-width: 500px;
 }
 
+h1 {
+    color: #E60012;
+}
+
 input {
-    width: 80%;
+    width: 100%;
     padding: 10px;
     margin: 10px 0;
     border: 1px solid #ccc;
@@ -29,42 +33,57 @@ input {
 }
 
 button {
-    background: #E60012;
-    color: white;
+    background-color: #E60012;
+    color: #fff;
     border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+    padding: 10px;
+    width: 100%;
     cursor: pointer;
     font-size: 16px;
+    border-radius: 5px;
+    margin-top: 10px;
 }
 
 button:hover {
-    background: #C40010;
-}
-
-table {
-    width: 100%;
-    margin-top: 20px;
-    border-collapse: collapse;
-}
-
-th, td {
-    border: 1px solid #ddd;
-    padding: 10px;
-    text-align: left;
-}
-
-th {
-    background: #E60012;
-    color: white;
+    background-color: #B4000F;
 }
 
 .hidden {
     display: none;
 }
 
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+table, th, td {
+    border: 1px solid #ccc;
+}
+
+th, td {
+    padding: 10px;
+    text-align: center;
+}
+
+th {
+    background-color: #E60012;
+    color: #fff;
+}
+
 #analise {
-    margin-top: 20px;
+    margin-top: 15px;
     font-weight: bold;
     color: #E60012;
+}
+
+#btnAjuda {
+    margin-top: 10px;
+    background-color: #0057B7;
+    display: none;
+}
+
+#btnAjuda:hover {
+    background-color: #004494;
 }
