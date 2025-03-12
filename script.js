@@ -1,0 +1,31 @@
+const dadosProdutividade = {
+    "N6071740": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 418, "TOA: 1ª Int.": 0, "NICE: Recebido": 1, "NICE: Atendido": 1, "NICE: Realizado": 11, "Total": 431 },
+    "N6173067": { "Abertura RAL": 61, "RAL": 0, "REC": 0, "Remedy Móvel": 1260, "TOA: 1ª Int.": 3, "NICE: Recebido": 3, "NICE: Atendido": 3, "NICE: Realizado": 16, "Total": 1346 },
+    "N6172207": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 1671, "TOA: 1ª Int.": 4, "NICE: Recebido": 1, "NICE: Atendido": 1, "NICE: Realizado": 0, "Total": 1677 },
+    "N6104793": { "Abertura RAL": 52, "RAL": 1, "REC": 0, "Remedy Móvel": 880, "TOA: 1ª Int.": 0, "NICE: Recebido": 2, "NICE: Atendido": 0, "NICE: Realizado": 24, "Total": 959 },
+    "N5931955": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 0, "TOA: 1ª Int.": 39, "NICE: Recebido": 0, "NICE: Atendido": 0, "NICE: Realizado": 7, "Total": 46 },
+    "F204763": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 1793, "TOA: 1ª Int.": 5, "NICE: Recebido": 10, "NICE: Atendido": 9, "NICE: Realizado": 28, "Total": 1845 }
+};
+
+function buscarDados() {
+    const login = document.getElementById("login").value;
+    const resultadoDiv = document.getElementById("resultado");
+    const tabelaDados = document.getElementById("tabelaDados");
+    const analise = document.getElementById("analise");
+    
+    if (dadosProdutividade[login]) {
+        const dados = dadosProdutividade[login];
+        tabelaDados.innerHTML = "";
+        
+        Object.keys(dados).forEach(indicador => {
+            const row = `<tr><td>${indicador}</td><td>${dados[indicador]}</td></tr>`;
+            tabelaDados.innerHTML += row;
+        });
+        
+        analise.textContent = `Seu desempenho foi analisado. Confira os detalhes acima.`;
+        resultadoDiv.classList.remove("hidden");
+    } else {
+        resultadoDiv.classList.add("hidden");
+        alert("Login não encontrado!");
+    }
+}
