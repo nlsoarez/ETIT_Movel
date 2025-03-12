@@ -1,23 +1,23 @@
-/* Estilos baseados na identidade visual da Claro Brasil */
 body {
     font-family: Arial, sans-serif;
-    background-color: #f8f8f8;
-    color: #333;
-    text-align: center;
-    padding: 20px;
+    background-color: #E60012;
+    color: #fff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
 }
 
 .container {
-    background: white;
-    max-width: 600px;
-    margin: auto;
+    background: #fff;
+    color: #333;
     padding: 20px;
     border-radius: 10px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-}
-
-h1 {
-    color: #e30613; /* Vermelho Claro */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    text-align: center;
+    width: 90%;
+    max-width: 500px;
 }
 
 input {
@@ -29,7 +29,7 @@ input {
 }
 
 button {
-    background-color: #e30613;
+    background: #E60012;
     color: white;
     border: none;
     padding: 10px 20px;
@@ -39,11 +39,7 @@ button {
 }
 
 button:hover {
-    background-color: #ba040f;
-}
-
-.hidden {
-    display: none;
+    background: #C40010;
 }
 
 table {
@@ -52,12 +48,23 @@ table {
     border-collapse: collapse;
 }
 
-table, th, td {
+th, td {
     border: 1px solid #ddd;
     padding: 10px;
+    text-align: left;
 }
 
 th {
-    background-color: #e30613;
+    background: #E60012;
     color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+#analise {
+    margin-top: 20px;
+    font-weight: bold;
+    color: #E60012;
 }
