@@ -97,7 +97,6 @@ p {
     color: #666;
 }
 
-/* Estilização da tabela */
 table {
     width: 100%;
     border-collapse: collapse;
@@ -126,27 +125,6 @@ tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
-/* Cores para indicadores positivos e negativos */
-.ponto-forte {
-    background-color: #c8e6c9 !important;
-}
-
-.ponto-fraco {
-    background-color: #ffcdd2 !important;
-}
-
-/* Melhorando a exibição da análise */
-#analise-container {
-    margin-top: 15px;
-    padding: 15px;
-    background: #e3f2fd;
-    border-radius: 8px;
-    text-align: center;
-    font-size: 16px;
-    font-weight: bold;
-    color: #01579b;
-}
-
 .atualizacao {
     font-size: 14px;
     color: #999;
@@ -154,14 +132,28 @@ tbody tr:nth-child(even) {
     text-align: center;
 }
 
-/* Responsividade */
-@media (max-width: 500px) {
-    .container {
-        padding: 15px;
-        max-width: 90%;
-    }
-    th, td {
-        font-size: 12px;
-        padding: 8px;
-    }
+/* Bloco de análise estilizado */
+#analise {
+    background-color: #e7f3ff;
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 15px;
+    font-size: 16px;
+    color: #004085;
+    border-left: 5px solid #007bff;
+}
+
+#analise strong {
+    display: block;
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+#analise ul {
+    margin-top: 5px;
+    padding-left: 20px;
+}
+
+#analise li {
+    margin-bottom: 5px;
 }
