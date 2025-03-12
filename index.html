@@ -37,6 +37,25 @@
             "N5931955": { "Abertura RAL": 0, "RAL": 0, "REC": 0, "Remedy Móvel": 0, "TOA: 1ª Int.": 39, "NICE: Recebido": 0, "NICE: Atendido": 0, "NICE: Realizado": 7, "Total": 46 }
         };
 
+        function calcularMediaIndicadores() {
+            const totalAnalistas = Object.keys(dadosProdutividade).length;
+            const somaIndicadores = {};
+            
+            Object.values(dadosProdutividade).forEach(dados => {
+                Object.keys(dados).forEach(indicador => {
+                    if (!somaIndicadores[indicador]) somaIndicadores[indicador] = 0;
+                    somaIndicadores[indicador] += dados[indicador];
+                });
+            });
+            
+            const mediaIndicadores = {};
+            Object.keys(somaIndicadores).forEach(indicador => {
+                mediaIndicadores[indicador] = somaIndicadores[indicador] / totalAnalistas;
+            });
+            
+            return mediaIndicadores;
+        }
+
         function buscarDados() {
             const login = document.getElementById("login").value;
             const resultadoDiv = document.getElementById("resultado");
@@ -45,15 +64,27 @@
             
             if (dadosProdutividade[login]) {
                 const dados = dadosProdutividade[login];
-                tabelaDados.innerHTML = "";
+                const mediaIndicadores = calcularMediaIndicadores();
+                let pontosFracos = [];
                 
+                tabelaDados.innerHTML = "";
                 Object.keys(dados).forEach(indicador => {
-                    const row = `<tr><td>${indicador}</td><td>${dados[indicador]}</td></tr>`;
+                    const valor = dados[indicador];
+                    const media = mediaIndicadores[indicador];
+                    
+                    if (valor < media) {
+                        pontosFracos.push(`${indicador} (Média: ${media.toFixed(1)})`);
+                    }
+                    
+                    const row = `<tr><td>${indicador}</td><td>${valor}</td></tr>`;
                     tabelaDados.innerHTML += row;
                 });
                 
-                const mediaTotal = Object.values(dadosProdutividade).reduce((sum, obj) => sum + obj["Total"], 0) / Object.keys(dadosProdutividade).length;
-                analise.textContent = dados.Total >= mediaTotal ? "Você está na média ou acima da equipe." : "Você está abaixo da média, foque em melhorar sua produtividade.";
+                if (pontosFracos.length > 0) {
+                    analise.textContent = `Você está abaixo da média nos seguintes pontos: ${pontosFracos.join(", ")}. Foque em melhorá-los.`;
+                } else {
+                    analise.textContent = "Parabéns! Você está na média ou acima em todos os indicadores.";
+                }
                 
                 resultadoDiv.classList.remove("hidden");
             } else {
