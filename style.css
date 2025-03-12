@@ -27,7 +27,7 @@ body {
 
 h2 {
     font-size: 22px;
-    color: #c00;
+    color: #e60000; /* Vermelho Claro */
     margin-bottom: 20px;
     font-weight: bold;
 }
@@ -43,7 +43,7 @@ input {
 
 button {
     width: 100%;
-    background-color: #c00;
+    background-color: #e60000; /* Vermelho Claro */
     color: white;
     border: none;
     padding: 12px;
@@ -55,7 +55,7 @@ button {
 }
 
 button:hover {
-    background-color: #900;
+    background-color: #b30000; /* Vermelho mais escuro */
 }
 
 .hidden {
@@ -100,7 +100,7 @@ th, td {
 }
 
 th {
-    background-color: #c00;
+    background-color: #e60000; /* Vermelho Claro */
     color: white;
     font-weight: bold;
 }
