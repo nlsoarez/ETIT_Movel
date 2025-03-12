@@ -27,7 +27,7 @@ body {
 
 h2 {
     font-size: 22px;
-    color: #e60000; /* Vermelho Claro */
+    color: #c00;
     margin-bottom: 20px;
     font-weight: bold;
 }
@@ -39,11 +39,19 @@ input {
     border: 1px solid #ccc;
     border-radius: 5px;
     font-size: 16px;
+    transition: 0.3s;
+}
+
+/* Efeito de foco no input */
+input:focus {
+    border-color: #c00;
+    outline: none;
+    box-shadow: 0 0 5px rgba(204, 0, 0, 0.5);
 }
 
 button {
     width: 100%;
-    background-color: #e60000; /* Vermelho Claro */
+    background-color: #c00;
     color: white;
     border: none;
     padding: 12px;
@@ -54,8 +62,14 @@ button {
     font-weight: bold;
 }
 
+/* Efeito ao passar o mouse */
 button:hover {
-    background-color: #b30000; /* Vermelho mais escuro */
+    background-color: #900;
+}
+
+/* Efeito de clique */
+button:active {
+    transform: scale(0.98);
 }
 
 .hidden {
@@ -99,10 +113,16 @@ th, td {
     font-size: 14px;
 }
 
+/* Estilo do cabeçalho da tabela */
 th {
-    background-color: #e60000; /* Vermelho Claro */
+    background-color: #c00;
     color: white;
     font-weight: bold;
+}
+
+/* Linhas alternadas na tabela */
+tbody tr:nth-child(even) {
+    background-color: #f9f9f9;
 }
 
 .atualizacao {
@@ -110,4 +130,16 @@ th {
     color: #999;
     margin-top: 15px;
     text-align: center;
+}
+
+/* Responsividade */
+@media (max-width: 500px) {
+    .container {
+        padding: 15px;
+        max-width: 90%;
+    }
+    th, td {
+        font-size: 12px;
+        padding: 8px;
+    }
 }
