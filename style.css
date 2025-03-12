@@ -1,13 +1,6 @@
-/* Reset básico */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Arial', sans-serif;
-}
-
 body {
-    background-color: #f4f4f9;
+    font-family: Arial, sans-serif;
+    background-color: #f5f5f5;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -16,36 +9,37 @@ body {
 }
 
 .container {
-    background-color: #ffffff;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
     text-align: center;
     width: 100%;
-    max-width: 420px;
+    max-width: 400px;
 }
 
 .logo {
-    width: 130px;
+    width: 120px;
     height: auto;
-    margin-bottom: 15px;
+    margin: 0 auto 15px auto;
+    display: block;
 }
 
 h2 {
-    font-size: 24px;
+    font-size: 22px;
     color: #c00;
     margin-bottom: 20px;
     font-weight: bold;
 }
 
 input {
-    width: 100%;
-    padding: 12px;
+    width: calc(100% - 22px);
+    padding: 10px;
     margin-bottom: 15px;
     border: 1px solid #ccc;
-    border-radius: 6px;
+    border-radius: 5px;
     font-size: 16px;
-    transition: all 0.3s ease-in-out;
+    transition: 0.3s;
 }
 
 input:focus {
@@ -56,19 +50,19 @@ input:focus {
 
 button {
     width: 100%;
-    background: linear-gradient(135deg, #c00, #900);
+    background: linear-gradient(90deg, #c00, #900);
     color: white;
     border: none;
     padding: 12px;
-    border-radius: 6px;
+    border-radius: 5px;
     font-size: 16px;
     cursor: pointer;
-    transition: all 0.3s;
+    transition: 0.3s;
     font-weight: bold;
 }
 
 button:hover {
-    background: linear-gradient(135deg, #900, #700);
+    background: linear-gradient(90deg, #900, #600);
 }
 
 button:active {
@@ -83,7 +77,7 @@ button:active {
     margin-top: 20px;
     padding: 15px;
     background: #fafafa;
-    border-radius: 10px;
+    border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     text-align: left;
 }
@@ -91,7 +85,7 @@ button:active {
 h3 {
     color: #333;
     font-size: 18px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
     font-weight: bold;
 }
 
@@ -104,8 +98,6 @@ table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 10px;
-    border-radius: 6px;
-    overflow: hidden;
 }
 
 table, th, td {
@@ -113,7 +105,7 @@ table, th, td {
 }
 
 th, td {
-    padding: 12px;
+    padding: 10px;
     text-align: center;
     font-size: 14px;
 }
@@ -128,6 +120,22 @@ tbody tr:nth-child(even) {
     background-color: #f9f9f9;
 }
 
+tbody tr.ponto-fraco {
+    background-color: #ffcccc;
+}
+
+tbody tr.ponto-forte {
+    background-color: #ccffcc;
+}
+
+.analise-container {
+    margin-top: 15px;
+    padding: 10px;
+    border-radius: 5px;
+    background: #f1f1f1;
+    text-align: center;
+}
+
 .atualizacao {
     font-size: 14px;
     color: #999;
@@ -135,14 +143,13 @@ tbody tr:nth-child(even) {
     text-align: center;
 }
 
-/* Responsividade */
 @media (max-width: 500px) {
     .container {
-        padding: 20px;
+        padding: 15px;
         max-width: 90%;
     }
     th, td {
-        font-size: 13px;
+        font-size: 12px;
         padding: 8px;
     }
 }
