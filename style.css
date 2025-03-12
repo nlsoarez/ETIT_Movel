@@ -1,53 +1,63 @@
+/* Estilos baseados na identidade visual da Claro Brasil */
 body {
     font-family: Arial, sans-serif;
-    text-align: center;
-    background-color: #f4f4f4;
-    padding: 20px;
-}
-
-h1, h2 {
+    background-color: #f8f8f8;
     color: #333;
-}
-
-.upload-container, .form-container {
-    margin: 20px auto;
-    width: 50%;
-    background: white;
+    text-align: center;
     padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-label {
-    display: block;
-    margin-top: 10px;
+.container {
+    background: white;
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-input, select {
-    width: 100%;
-    padding: 8px;
-    margin: 5px 0;
+h1 {
+    color: #e30613; /* Vermelho Claro */
+}
+
+input {
+    width: 80%;
+    padding: 10px;
+    margin: 10px 0;
+    border: 1px solid #ccc;
+    border-radius: 5px;
 }
 
 button {
-    margin-top: 10px;
-    padding: 10px;
-    width: 100%;
-    background-color: #007bff;
+    background-color: #e30613;
     color: white;
     border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
     cursor: pointer;
+    font-size: 16px;
 }
 
 button:hover {
-    background-color: #0056b3;
+    background-color: #ba040f;
 }
 
-.indicadores-container {
-    margin: 30px auto;
-    width: 80%;
-    background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+.hidden {
+    display: none;
+}
+
+table {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+}
+
+table, th, td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+th {
+    background-color: #e30613;
+    color: white;
 }
