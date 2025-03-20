@@ -6,80 +6,122 @@
     <title>Consulta SLA</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            text-align: center; 
-            padding: 20px; 
-            background-color: #f8f9fa; 
+        /* Estilos gerais */
+        * {
+            box-sizing: border-box;
             margin: 0;
+            padding: 0;
         }
-        .container { 
-            max-width: 800px; 
-            margin: auto; 
-            background: white; 
-            padding: 30px; 
-            border-radius: 8px; 
-            box-shadow: 0px 0px 15px rgba(0, 0, 0, 0.1); 
-            margin-top: 20px;
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f4f4f4;
+            text-align: center;
+            color: #333;
+            padding: 20px;
         }
-        .input-group { 
-            display: flex; 
-            justify-content: center; 
-            gap: 10px; 
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            width: 150px;
             margin-bottom: 20px;
         }
-        input, button { 
-            padding: 12px; 
-            font-size: 16px; 
-            border-radius: 5px; 
-            border: 1px solid #ccc; 
+
+        h2 {
+            color: #D52B1E;
+            margin-bottom: 15px;
+            font-size: 22px;
         }
-        .botao { 
-            background-color: #D52B1E; 
-            color: white; 
-            border: none; 
-            cursor: pointer; 
-            font-weight: bold; 
-        }
-        .botao:hover { 
-            background-color: #b2221a; 
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-            margin-top: 15px; 
-        }
-        th, td { 
-            border: 1px solid #ddd; 
-            padding: 12px; 
-            text-align: center; 
-        }
-        th { 
-            background-color: #D52B1E; 
-            color: white; 
-        }
-        .ganho { 
-            background-color: #d4f7d0; 
-            color: green; 
-        }
-        .perda { 
-            background-color: #fddcdc; 
-            color: red; 
-        }
-        .contador { 
-            font-weight: bold; 
-            margin-top: 20px; 
-        }
-        .logo { 
-            width: 120px; 
+
+        /* Grupo de inputs */
+        .input-group {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 10px;
             margin-bottom: 20px;
         }
+
+        input, button {
+            padding: 12px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            width: 100%;
+            max-width: 300px;
+        }
+
+        .botao {
+            background-color: #D52B1E;
+            color: white;
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .botao:hover {
+            background-color: #b2221a;
+        }
+
+        /* Tabelas */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #D52B1E;
+            color: white;
+        }
+
+        .ganho {
+            background-color: #d4f7d0;
+            color: green;
+        }
+
+        .perda {
+            background-color: #fddcdc;
+            color: red;
+        }
+
+        /* Responsividade */
+        @media (max-width: 600px) {
+            .input-group {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            input, button {
+                max-width: 100%;
+            }
+        }
+
         .tempo-medio {
             font-size: 18px;
             font-weight: bold;
             color: #333;
-            margin: 10px 0;
-            text-align: center;
+            margin-top: 20px;
+        }
+
+        .contador {
+            font-weight: bold;
+            margin-top: 20px;
         }
     </style>
 </head>
@@ -87,7 +129,7 @@
     <div class="container">
         <img src="https://www.eventos.momentoeditorial.com.br/wp-content/uploads/2020/07/logo-Claro-800x600px.png" alt="Claro Brasil Logo" class="logo">
         <h2>Painel ETIT Empresarial</h2>
-        
+
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx">
         </div>
@@ -188,14 +230,8 @@
                 ? `Colaborador: ${nomeColaboradorExibir}`
                 : "Colaborador não encontrado!";
 
-            let mediaGanhos = ganhos.length ? (totalTempoGanhos / ganhos.length).toFixed(2) : "N/A";
-            let mediaPerdas = perdas.length ? (totalTempoPerdas / perdas.length).toFixed(2) : "N/A";
-
-            document.getElementById("contadores").innerHTML = 
-                `Total Dentro do SLA: ${ganhos.length} | Total Fora do SLA: ${perdas.length}`;
-
-            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${mediaGanhos}</b>`;
-            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${mediaPerdas}</b>`;
+            document.getElementById("tempoMedioGanhos").innerHTML = `Tempo Médio Dentro do SLA: <b>${(totalTempoGanhos / ganhos.length || 0).toFixed(2)}</b>`;
+            document.getElementById("tempoMedioPerdas").innerHTML = `Tempo Médio Fora do SLA: <b>${(totalTempoPerdas / perdas.length || 0).toFixed(2)}</b>`;
 
             atualizarTabela("tabelaGanhos", ganhos, "ganho");
             atualizarTabela("tabelaPerdas", perdas, "perda");
@@ -203,17 +239,7 @@
 
         function atualizarTabela(idTabela, dados, classe) {
             const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
-            tabela.innerHTML = "";
-            let fragment = document.createDocumentFragment();
-
-            dados.forEach(([ticket, tempo]) => {
-                let row = document.createElement("tr");
-                row.className = classe;
-                row.innerHTML = `<td>${ticket}</td><td>${tempo}</td>`;
-                fragment.appendChild(row);
-            });
-
-            tabela.appendChild(fragment);
+            tabela.innerHTML = dados.map(([ticket, tempo]) => `<tr class="${classe}"><td>${ticket}</td><td>${tempo}</td></tr>`).join('');
         }
     </script>
 </body>
