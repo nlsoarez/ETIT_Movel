@@ -81,10 +81,9 @@
                 let caixa = row[3] || "N/A";
                 let tipo = row[4] || "N/A";
                 
-                if (!totalPorAnalista[matriculaPlanilha]) {
-                    totalPorAnalista[matriculaPlanilha] = 0;
+                if (matriculaPlanilha) {
+                    totalPorAnalista[matriculaPlanilha] = (totalPorAnalista[matriculaPlanilha] || 0) + 1;
                 }
-                totalPorAnalista[matriculaPlanilha]++;
                 
                 if (matriculaPlanilha === matricula) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
