@@ -4,50 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel ETIT Móvel</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+   /libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f2f2f2;
-            text-align: center;
-        }
-        .container {
-            max-width: 800px;
-            margin: 50px auto;
-            background: white;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-        }
+        body { font-family: Arial, sans-serif; background-color: #f2f2f2; text-align: center; }
+        .container { max-width: 800px; margin: 50px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
         h2 { color: #D52B1E; }
         .input-group { margin-bottom: 15px; }
-        input, button {
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        .botao {
-            background-color: #D52B1E;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
+        input, button { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        .botao { background-color: #D52B1E; color: white; border: none; cursor: pointer; }
         .botao:hover { background-color: #B2221A; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-        }
-        th, td {
-            padding: 8px;
-            text-align: center;
-            border: 1px solid #ddd;
-        }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 8px; text-align: center; border: 1px solid #ddd; }
         th { background-color: #D52B1E; color: white; }
         .dentro { background-color: #4CAF50; color: white; }
         .fora { background-color: #FF4D4D; color: white; }
     </style>
+    <link rel="shortcut icon" href="#">
 </head>
 <body>
     <div class="container">
@@ -63,24 +35,26 @@
         <h3>Resultados:</h3>
         <div id="resultados"></div>
         <h3>Incidentes Dentro do ETIT:</h3>
-        <table><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead>
+        <table><thead><tr><th>Incidente</th><th>CAIXA</th><th>TIPO</th></tr></thead>
         <tbody id="tabelaDentro"></tbody></table>
         <h3>Incidentes Fora do ETIT:</h3>
-        <table><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead>
+        <table><thead><tr><th>Incidente</th><th>CAIXA</th><th>TIPO</th></tr></thead>
         <tbody id="tabelaFora"></tbody></table>
     </div>
     <script>
         let dadosPlanilha = [];
+
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                console.log("Planilha carregada:", dadosPlanilha);
+                console carregada:", dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -89,29 +63,39 @@
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim();
             if (!matricula) return alert("Digite uma matrícula!");
-            let dentroETIT = [], foraETIT = [], nomeUsuario = "";
+
+            let dentroETIT = [], foraETIT = [];
+            let nomeUsuario = "Não encontrado";
+            let totalIncidentes = 0;
+
             dadosPlanilha.forEach(row => {
-                if (!row || row.length < 6) return;
-                let [incidente, mat, statusETIT, caixa, tipo, analista] = row;
-                if (!mat || !statusETIT) return;
-                if (mat.toString().trim().toLowerCase() === matricula.toLowerCase()) {
+                if (row.length < 5) return;
+
+                let [incidente, analista, valido, caixa, tipo] = row;
+                if (!incidente || !valido) return;
+
+                if (incidente.toString().trim() === matricula) {
                     nomeUsuario = analista;
-                    if (statusETIT.toString().trim().toUpperCase() === "SIM") {
-                        dentroETIT.push([incidente, caixa, tipo]);
+                    totalIncidentes++;
+                    let incidenteInfo = [incidente, caixa, tipo];
+                    if (valido.toString().trim().toUpperCase() === "SIM") {
+                        dentroETIT.push(incidenteInfo);
                     } else {
-                        foraETIT.push([incidente, caixa, tipo]);
+                        foraETIT.push(incidenteInfo);
                     }
                 }
             });
+
             let totalDentro = dentroETIT.length;
             let totalFora = foraETIT.length;
-            let totalTratado = totalDentro + totalFora;
-            let percentualDentro = totalTratado > 0 ? ((totalDentro / totalTratado) * 100).toFixed(2) : 0;
+            let percentualDentro = totalIncidentes > 0 ? ((totalDentro / totalIncidentes) * 100).toFixed(2) : 0;
+            let metaAtingida = percentualDentro >= 85 ? "✅ Meta atingida" : "❌ Meta não atingida";
+
+            document.getElementById("nomeUsuario").innerHTML = `<h3>${nomeUsuario}</h3>`;
             document.getElementById("resultados").innerHTML = `
-                <div><strong>Nome do Analista:</strong> ${nomeUsuario || 'Não encontrado'}</div>
                 <div><strong>Total Dentro do ETIT:</strong> ${totalDentro}</div>
                 <div><strong>Total Fora do ETIT:</strong> ${totalFora}</div>
-                <div><strong>Percentual Dentro do ETIT:</strong> ${percentualDentro}% (Meta: 85%)</div>
+                <div><strong>Percentual Dentro do ETIT:</strong> ${percentualDentro}% (${metaAtingida})</div>
             `;
             atualizarTabela("tabelaDentro", dentroETIT, "dentro");
             atualizarTabela("tabelaFora", foraETIT, "fora");
@@ -122,9 +106,7 @@
             tabela.innerHTML = "";
             dados.forEach(([incidente, caixa, tipo]) => {
                 let row = tabela.insertRow();
-                row.insertCell(0).innerText = incidente;
-                row.insertCell(1).innerText = caixa;
-                row.insertCell(2).innerText = tipo;
+                row.innerHTML = `<td>${incidente}</td><td>${caixa}</td><td>${tipo}</td>`;
                 row.classList.add(classe);
             });
         }
