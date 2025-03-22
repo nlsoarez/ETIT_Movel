@@ -59,11 +59,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                if (dados.length === 0) {
-                    alert("A planilha está vazia ou com formato inválido!");
-                } else {
-                    alert("Planilha carregada com sucesso!");
-                }
+                alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
         });
@@ -80,17 +76,17 @@
             dados.forEach(row => {
                 if (row.length < 5) return;
                 let incidente = row[0];
-                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
+                let matriculaPlanilha = row[1]?.toString().trim().toUpperCase();
                 let valido = row[2]?.toString().trim().toLowerCase();
                 let caixa = row[3] || "N/A";
                 let tipo = row[4] || "N/A";
                 
-                if (!totalPorAnalista[nomeAnalistaPlanilha]) {
-                    totalPorAnalista[nomeAnalistaPlanilha] = 0;
+                if (!totalPorAnalista[matriculaPlanilha]) {
+                    totalPorAnalista[matriculaPlanilha] = 0;
                 }
-                totalPorAnalista[nomeAnalistaPlanilha]++;
+                totalPorAnalista[matriculaPlanilha]++;
                 
-                if (nomeAnalistaPlanilha === nomeAnalista) {
+                if (matriculaPlanilha === matricula) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
                     else if (valido === "não") fora.push([incidente, caixa, tipo]);
                 }
@@ -112,6 +108,16 @@
                 <p><strong>Status do Analista:</strong> <span class="${statusMedia}">${total >= mediaEquipe ? "Acima ou igual à média" : "Abaixo da média"}</span></p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
+        }
+
+        function atualizarTabela(idTabela, dados, classe) {
+            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
+            tabela.innerHTML = "";
+            dados.forEach(item => {
+                let row = tabela.insertRow();
+                row.className = classe;
+                item.forEach((dado, index) => row.insertCell(index).innerText = dado);
+            });
         }
     </script>
 </body>
