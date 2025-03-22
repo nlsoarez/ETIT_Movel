@@ -14,22 +14,33 @@
         th { background-color: #D52B1E; color: white; }
         .dentro { background-color: #4CAF50; color: white; }
         .fora { background-color: #FF4D4D; color: white; }
+        .meta-atingida { color: green; font-weight: bold; }
+        .meta-nao-atingida { color: red; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
         <input type="file" id="upload" accept=".xlsx">
-        <input type="text" id="analista" placeholder="Digite o nome do analista">
+        <input type="text" id="matricula" placeholder="Digite a matrícula">
         <button onclick="consultarETIT()">Consultar</button>
         <div id="resultado"></div>
         <h3>Incidentes Dentro</h3>
-        <table id="tabelaDentro"><thead><tr><th>Incidente</th></tr></thead><tbody></tbody></table>
+        <table id="tabelaDentro"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
         <h3>Incidentes Fora</h3>
-        <table id="tabelaFora"><thead><tr><th>Incidente</th></tr></thead><tbody></tbody></table>
+        <table id="tabelaFora"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
     </div>
     <script>
         let dados = [];
+        
+        const matriculaToNome = {
+            "N6104793": "BRUNO MARIANO VILACA",
+            "N5931955": "THIAGO DE SOUZA INACIO",
+            "N6173067": "JULIANA RIBEIRO GALHÃO",
+            "N6071740": "THIAGO BARBOZA DOS SANTOS",
+            "N6172207": "CHARLES DOS SANTOS PAIVA",
+            "F204763": "RODRIGO REIS DUARTE"
+        };
 
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
@@ -45,26 +56,35 @@
         });
 
         function consultarETIT() {
-            const analista = document.getElementById('analista').value.trim().toLowerCase();
-            if (!analista) { alert("Digite um nome de analista!"); return; }
+            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
+            if (!matricula) { alert("Digite uma matrícula!"); return; }
             
+            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
             let dentro = [];
             let fora = [];
             
             dados.forEach(row => {
-                if (row.length < 3) return;
+                if (row.length < 5) return;
                 let incidente = row[0];
-                let nomeAnalista = row[1]?.toString().trim().toLowerCase();
+                let matriculaPlanilha = row[1]?.toString().trim().toUpperCase();
                 let valido = row[2]?.toString().trim().toLowerCase();
+                let caixa = row[3] || "N/A";
+                let tipo = row[4] || "N/A";
                 
-                if (nomeAnalista.includes(analista)) {
-                    if (valido === "sim") dentro.push(incidente);
-                    else if (valido === "não") fora.push(incidente);
+                if (matriculaPlanilha === matricula) {
+                    if (valido === "sim") dentro.push([incidente, caixa, tipo]);
+                    else if (valido === "não") fora.push([incidente, caixa, tipo]);
                 }
             });
 
+            let total = dentro.length + fora.length;
+            let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
+            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
+            
             document.getElementById("resultado").innerHTML = 
-                `<p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length}</p>`;
+                `<p><strong>Nome:</strong> ${nomeAnalista}</p>
+                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
+                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
         }
@@ -74,8 +94,12 @@
             tabela.innerHTML = "";
             dados.forEach(item => {
                 let row = tabela.insertRow();
-                let cell = row.insertCell(0);
-                cell.innerText = item;
+                let cell1 = row.insertCell(0);
+                let cell2 = row.insertCell(1);
+                let cell3 = row.insertCell(2);
+                cell1.innerText = item[0];
+                cell2.innerText = item[1];
+                cell3.innerText = item[2];
                 row.className = classe;
             });
         }
