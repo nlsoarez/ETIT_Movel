@@ -12,7 +12,7 @@
             text-align: center;
         }
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 50px auto;
             background: white;
             padding: 20px;
@@ -74,35 +74,38 @@
             <input type="text" id="matricula" placeholder="Digite a matrícula">
             <button class="botao" onclick="consultarETIT()">Consultar</button>
         </div>
-        <div id="nomeAnalista"></div>
         <h3>Resultados:</h3>
         <div id="resultados"></div>
         <h3>Incidentes Dentro do ETIT:</h3>
         <table>
             <thead>
-                <tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr>
+                <tr><th>Incidente</th><th>CAIXA</th><th>TIPO</th></tr>
             </thead>
             <tbody id="tabelaDentro"></tbody>
         </table>
         <h3>Incidentes Fora do ETIT:</h3>
         <table>
             <thead>
-                <tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr>
+                <tr><th>Incidente</th><th>CAIXA</th><th>TIPO</th></tr>
             </thead>
             <tbody id="tabelaFora"></tbody>
         </table>
     </div>
     <script>
         let dadosPlanilha = [];
+
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                dadosPlanilha = XLSX.utils.sheet_to_json(sheet);
+                dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+
+                console.log("Planilha carregada:", dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -111,28 +114,42 @@
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim();
             if (!matricula) return alert("Digite uma matrícula!");
-            let dentroETIT = [], foraETIT = [], totalIncidentes = 0;
-            let nomeAnalista = "";
+
+            let dentroETIT = [], foraETIT = [];
+            let totalIncidentes = 0;
+            let analista = "Não encontrado";
+
             dadosPlanilha.forEach(row => {
-                if (row["ANALISTA"] && row["ANALISTA"].includes(matricula)) {
+                if (!row || row.length < 5) return;
+                let [incidente, userMatricula, statusETIT, caixa, tipo, nomeAnalista] = row;
+                if (!userMatricula || !statusETIT) return;
+
+                userMatricula = userMatricula.toString().trim();
+                statusETIT = statusETIT.toString().trim().toUpperCase();
+                
+                if (userMatricula === matricula) {
                     totalIncidentes++;
-                    nomeAnalista = row["ANALISTA"];
-                    if (row["VALIDO"] === "Sim") {
-                        dentroETIT.push([row["INCIDENTE"], row["CAIXA"], row["TIPO"]]);
+                    analista = nomeAnalista || "Não informado";
+                    
+                    if (statusETIT === "SIM") {
+                        dentroETIT.push([incidente, caixa, tipo]);
                     } else {
-                        foraETIT.push([row["INCIDENTE"], row["CAIXA"], row["TIPO"]]);
+                        foraETIT.push([incidente, caixa, tipo]);
                     }
                 }
             });
+
             let totalDentro = dentroETIT.length;
-            let percentual = totalIncidentes ? ((totalDentro / totalIncidentes) * 100).toFixed(2) : 0;
-            let meta = percentual >= 85 ? "Atingida ✅" : "Não atingida ❌";
-            document.getElementById("nomeAnalista").innerHTML = `<strong>Analista:</strong> ${nomeAnalista}`;
+            let percentualDentro = totalIncidentes ? ((totalDentro / totalIncidentes) * 100).toFixed(2) : 0;
+            let meta = percentualDentro >= 85 ? "✔ Atingida" : "❌ Não atingida";
+
             document.getElementById("resultados").innerHTML = `
+                <div><strong>Analista:</strong> ${analista}</div>
                 <div><strong>Total Dentro do ETIT:</strong> ${totalDentro}</div>
-                <div><strong>Total Fora do ETIT:</strong> ${foraETIT.length}</div>
-                <div><strong>Percentual Dentro:</strong> ${percentual}% (${meta})</div>
+                <div><strong>Total Fora do ETIT:</strong> ${totalIncidentes - totalDentro}</div>
+                <div><strong>Percentual Dentro:</strong> ${percentualDentro}% (Meta: 85%) - ${meta}</div>
             `;
+
             atualizarTabela("tabelaDentro", dentroETIT, "dentro");
             atualizarTabela("tabelaFora", foraETIT, "fora");
         }
@@ -142,7 +159,9 @@
             tabela.innerHTML = "";
             dados.forEach(([incidente, caixa, tipo]) => {
                 let row = tabela.insertRow();
-                row.innerHTML = `<td>${incidente}</td><td>${caixa}</td><td>${tipo}</td>`;
+                row.insertCell(0).innerText = incidente;
+                row.insertCell(1).innerText = caixa;
+                row.insertCell(2).innerText = tipo;
                 row.classList.add(classe);
             });
         }
