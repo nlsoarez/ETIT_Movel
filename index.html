@@ -17,17 +17,16 @@
         .fora { background-color: #FF4D4D; color: white; }
         .meta-atingida { color: green; font-weight: bold; }
         .meta-nao-atingida { color: red; font-weight: bold; }
-        .acima-media { color: green; font-weight: bold; }
-        .abaixo-media { color: red; font-weight: bold; }
+        .spinner { display: none; font-size: 18px; }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
         <input type="file" id="upload" accept=".xlsx">
-        <input type="text" id="matricula" placeholder="Digite a matrícula">
-        <button onclick="consultarETIT()">Consultar</button>
+        <input type="text" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
         <div id="resultado"></div>
+        <div class="spinner" id="spinner">⏳ Carregando...</div>
         <h3>Incidentes Dentro</h3>
         <div class="table-container">
             <table id="tabelaDentro"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
@@ -39,7 +38,6 @@
     </div>
     <script>
         let dados = [];
-        
         const matriculaToNome = {
             "N6104793": "BRUNO MARIANO VILACA",
             "N5931955": "THIAGO DE SOUZA INACIO",
@@ -48,10 +46,12 @@
             "N6172207": "CHARLES DOS SANTOS PAIVA",
             "F204763": "RODRIGO REIS DUARTE"
         };
-
+        
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
+            
+            document.getElementById("spinner").style.display = "block";
             
             const reader = new FileReader();
             reader.onload = function(e) {
@@ -59,63 +59,71 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                alert("Planilha carregada com sucesso!");
+                
+                document.getElementById("spinner").style.display = "none";
+                if (dados.length === 0 || dados[0].length < 5) {
+                    alert("Erro: A planilha está vazia ou com formato inválido!");
+                    dados = [];
+                } else {
+                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                    alert("Planilha carregada com sucesso!");
+                }
             };
             reader.readAsArrayBuffer(file);
         });
-
+        
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula) { alert("Digite uma matrícula!"); return; }
+            if (!matricula) return;
+            
+            if (!dados.length) {
+                const storedData = localStorage.getItem("dadosPlanilha");
+                if (storedData) {
+                    dados = JSON.parse(storedData);
+                } else {
+                    return;
+                }
+            }
             
             const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
             let dentro = [];
             let fora = [];
-            let totalPorAnalista = {};
             
             dados.forEach(row => {
                 if (row.length < 5) return;
                 let incidente = row[0];
-                let matriculaPlanilha = row[1]?.toString().trim().toUpperCase();
+                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
                 let valido = row[2]?.toString().trim().toLowerCase();
                 let caixa = row[3] || "N/A";
                 let tipo = row[4] || "N/A";
                 
-                if (matriculaPlanilha) {
-                    totalPorAnalista[matriculaPlanilha] = (totalPorAnalista[matriculaPlanilha] || 0) + 1;
-                }
-                
-                if (matriculaPlanilha === matricula) {
+                if (nomeAnalistaPlanilha === nomeAnalista) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
                     else if (valido === "não") fora.push([incidente, caixa, tipo]);
                 }
             });
-
+            
             let total = dentro.length + fora.length;
             let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
             let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
             
-            let totalAnalistas = Object.keys(totalPorAnalista).length;
-            let mediaEquipe = totalAnalistas > 0 ? (Object.values(totalPorAnalista).reduce((a, b) => a + b, 0) / totalAnalistas).toFixed(2) : 0;
-            let statusMedia = total >= mediaEquipe ? "acima-media" : "abaixo-media";
-            
             document.getElementById("resultado").innerHTML = 
                 `<p><strong>Nome:</strong> ${nomeAnalista}</p>
                 <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
-                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>
-                <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
-                <p><strong>Status do Analista:</strong> <span class="${statusMedia}">${total >= mediaEquipe ? "Acima ou igual à média" : "Abaixo da média"}</span></p>`;
+                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
         }
-
+        
         function atualizarTabela(idTabela, dados, classe) {
             const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
             tabela.innerHTML = "";
             dados.forEach(item => {
                 let row = tabela.insertRow();
+                row.insertCell(0).innerText = item[0];
+                row.insertCell(1).innerText = item[1];
+                row.insertCell(2).innerText = item[2];
                 row.className = classe;
-                item.forEach((dado, index) => row.insertCell(index).innerText = dado);
             });
         }
     </script>
