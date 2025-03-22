@@ -88,6 +88,7 @@
             const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
             let dentro = [];
             let fora = [];
+            let totalPorAnalista = {};
             
             dados.forEach(row => {
                 if (row.length < 5) return;
@@ -97,6 +98,11 @@
                 let caixa = row[3] || "N/A";
                 let tipo = row[4] || "N/A";
                 
+                if (!totalPorAnalista[nomeAnalistaPlanilha]) {
+                    totalPorAnalista[nomeAnalistaPlanilha] = 0;
+                }
+                totalPorAnalista[nomeAnalistaPlanilha]++;
+                
                 if (nomeAnalistaPlanilha === nomeAnalista) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
                     else if (valido === "não") fora.push([incidente, caixa, tipo]);
@@ -104,27 +110,17 @@
             });
             
             let total = dentro.length + fora.length;
-            let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
-            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
+            let mediaEquipe = Object.values(totalPorAnalista).reduce((a, b) => a + b, 0) / Object.keys(totalPorAnalista).length;
+            let dentroMedia = total >= mediaEquipe ? "meta-atingida" : "meta-nao-atingida";
             
             document.getElementById("resultado").innerHTML = 
                 `<p><strong>Nome:</strong> ${nomeAnalista}</p>
                 <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
-                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
+                <p><strong>Percentual Dentro:</strong> <span class="${total >= 85 ? 'meta-atingida' : 'meta-nao-atingida'}">${((dentro.length / total) * 100).toFixed(2)}%</span> (Meta: 85%)</p>
+                <p><strong>Média da Equipe:</strong> ${mediaEquipe.toFixed(2)}</p>
+                <p><strong>Status:</strong> <span class="${dentroMedia}">${total >= mediaEquipe ? 'Acima da média' : 'Abaixo da média'}</span></p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
-        }
-        
-        function atualizarTabela(idTabela, dados, classe) {
-            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
-            tabela.innerHTML = "";
-            dados.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item[0];
-                row.insertCell(1).innerText = item[1];
-                row.insertCell(2).innerText = item[2];
-                row.className = classe;
-            });
         }
     </script>
 </body>
