@@ -60,7 +60,7 @@
         });
 
         function consultarETIT() {
-            const matricula = document.getElementById('matricula').value.trim();
+            const = document.getElementById('matricula').value.trim();
             if (!matricula) return alert("Digite uma matrícula!");
 
             let dentroETIT = [], foraETIT = [];
@@ -70,14 +70,14 @@
             dadosPlanilha.forEach(row => {
                 if (row.length < 5) return;
 
-                let [matriculaPlanilha, nome, incidente, statusETIT, caixa, tipo] = row;
-                if (!matriculaPlanilha || !statusETIT) return;
+                let [incidente, analista, valido, caixa, tipo] = row;
+                if (!incidente || !valido) return;
 
-                if (matriculaPlanilha.toString().trim() === matricula) {
-                    nomeUsuario = nome;
+                if (incidente.toString().trim() === matricula) {
+                    nomeUsuario = analista;
                     totalIncidentes++;
                     let incidenteInfo = [incidente, caixa, tipo];
-                    if (statusETIT.toString().trim().toUpperCase() === "SIM") {
+                    if (valido.toString().trim().toUpperCase() === "SIM") {
                         dentroETIT.push(incidenteInfo);
                     } else {
                         foraETIT.push(incidenteInfo);
