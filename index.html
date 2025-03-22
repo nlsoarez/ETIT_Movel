@@ -6,101 +6,144 @@
     <title>Painel ETIT Móvel</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f2f2f2; text-align: center; }
-        .container { max-width: 800px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 8px; border: 1px solid #ddd; }
-        th { background-color: #D52B1E; color: white; }
-        .dentro { background-color: #4CAF50; color: white; }
-        .fora { background-color: #FF4D4D; color: white; }
-        .meta-atingida { color: green; font-weight: bold; }
-        .meta-nao-atingida { color: red; font-weight: bold; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f2f2f2;
+            text-align: center;
+        }
+        .container {
+            max-width: 800px;
+            margin: 50px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+        }
+        h2 {
+            color: #D52B1E;
+        }
+        .input-group {
+            margin-bottom: 15px;
+        }
+        input, button {
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        .botao {
+            background-color: #D52B1E;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        .botao:hover {
+            background-color: #B2221A;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            padding: 8px;
+            text-align: center;
+            border: 1px solid #ddd;
+        }
+        th {
+            background-color: #D52B1E;
+            color: white;
+        }
+        .dentro {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .fora {
+            background-color: #FF4D4D;
+            color: white;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
-        <input type="file" id="upload" accept=".xlsx">
-        <input type="text" id="matricula" placeholder="Digite a matrícula">
-        <button onclick="consultarETIT()">Consultar</button>
-        <div id="resultado"></div>
-        <h3>Incidentes Dentro</h3>
-        <table id="tabelaDentro"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
-        <h3>Incidentes Fora</h3>
-        <table id="tabelaFora"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
+        <div class="input-group">
+            <input type="file" id="upload" accept=".xlsx">
+        </div>
+        <div class="input-group">
+            <input type="text" id="matricula" placeholder="Digite a matrícula">
+            <button class="botao" onclick="consultarETIT()">Consultar</button>
+        </div>
+        <div id="nomeAnalista"></div>
+        <h3>Resultados:</h3>
+        <div id="resultados"></div>
+        <h3>Incidentes Dentro do ETIT:</h3>
+        <table>
+            <thead>
+                <tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr>
+            </thead>
+            <tbody id="tabelaDentro"></tbody>
+        </table>
+        <h3>Incidentes Fora do ETIT:</h3>
+        <table>
+            <thead>
+                <tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr>
+            </thead>
+            <tbody id="tabelaFora"></tbody>
+        </table>
     </div>
     <script>
-        let dados = [];
-        
-        const matriculaToNome = {
-            "N6104793": "BRUNO MARIANO VILACA",
-            "N5931955": "THIAGO DE SOUZA INACIO",
-            "N6173067": "JULIANA RIBEIRO GALHÃO",
-            "N6071740": "THIAGO BARBOZA DOS SANTOS",
-            "N6172207": "CHARLES DOS SANTOS PAIVA",
-            "F204763": "RODRIGO REIS DUARTE"
-        };
-
+        let dadosPlanilha = [];
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
+            if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                dadosPlanilha = XLSX.utils.sheet_to_json(sheet);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
         });
 
         function consultarETIT() {
-            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula) { alert("Digite uma matrícula!"); return; }
-            
-            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
-            let dentro = [];
-            let fora = [];
-            
-            dados.forEach(row => {
-                if (row.length < 5) return;
-                let incidente = row[0];
-                let matriculaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase();
-                let caixa = row[3] || "N/A";
-                let tipo = row[4] || "N/A";
-                
-                if (matriculaPlanilha === matricula) {
-                    if (valido === "sim") dentro.push([incidente, caixa, tipo]);
-                    else if (valido === "não") fora.push([incidente, caixa, tipo]);
+            const matricula = document.getElementById('matricula').value.trim();
+            if (!matricula) return alert("Digite uma matrícula!");
+            let dentroETIT = [], foraETIT = [], totalIncidentes = 0;
+            let nomeAnalista = "";
+            dadosPlanilha.forEach(row => {
+                if (row["ANALISTA"] && row["ANALISTA"].includes(matricula)) {
+                    totalIncidentes++;
+                    nomeAnalista = row["ANALISTA"];
+                    if (row["VALIDO"] === "Sim") {
+                        dentroETIT.push([row["INCIDENTE"], row["CAIXA"], row["TIPO"]]);
+                    } else {
+                        foraETIT.push([row["INCIDENTE"], row["CAIXA"], row["TIPO"]]);
+                    }
                 }
             });
-
-            let total = dentro.length + fora.length;
-            let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
-            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
-            
-            document.getElementById("resultado").innerHTML = 
-                `<p><strong>Nome:</strong> ${nomeAnalista}</p>
-                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
-                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
-            atualizarTabela("tabelaDentro", dentro, "dentro");
-            atualizarTabela("tabelaFora", fora, "fora");
+            let totalDentro = dentroETIT.length;
+            let percentual = totalIncidentes ? ((totalDentro / totalIncidentes) * 100).toFixed(2) : 0;
+            let meta = percentual >= 85 ? "Atingida ✅" : "Não atingida ❌";
+            document.getElementById("nomeAnalista").innerHTML = `<strong>Analista:</strong> ${nomeAnalista}`;
+            document.getElementById("resultados").innerHTML = `
+                <div><strong>Total Dentro do ETIT:</strong> ${totalDentro}</div>
+                <div><strong>Total Fora do ETIT:</strong> ${foraETIT.length}</div>
+                <div><strong>Percentual Dentro:</strong> ${percentual}% (${meta})</div>
+            `;
+            atualizarTabela("tabelaDentro", dentroETIT, "dentro");
+            atualizarTabela("tabelaFora", foraETIT, "fora");
         }
 
         function atualizarTabela(idTabela, dados, classe) {
-            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
+            const tabela = document.getElementById(idTabela);
             tabela.innerHTML = "";
-            dados.forEach(item => {
+            dados.forEach(([incidente, caixa, tipo]) => {
                 let row = tabela.insertRow();
-                let cell1 = row.insertCell(0);
-                let cell2 = row.insertCell(1);
-                let cell3 = row.insertCell(2);
-                cell1.innerText = item[0];
-                cell2.innerText = item[1];
-                cell3.innerText = item[2];
-                row.className = classe;
+                row.innerHTML = `<td>${incidente}</td><td>${caixa}</td><td>${tipo}</td>`;
+                row.classList.add(classe);
             });
         }
     </script>
