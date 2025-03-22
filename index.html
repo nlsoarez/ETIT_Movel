@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel ETIT Móvel</title>
-   /libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #f2f2f2; text-align: center; }
         .container { max-width: 800px; margin: 50px auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1); }
@@ -54,7 +54,7 @@
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
                 dadosPlanilha = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                console carregada:", dadosPlanilha);
+                console.log("Planilha carregada:", dadosPlanilha);
                 alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
@@ -65,7 +65,7 @@
             if (!matricula) return alert("Digite uma matrícula!");
 
             let dentroETIT = [], foraETIT = [];
-            let nomeUsuario = "Não encontrado";
+            = "Não encontrado";
             let totalIncidentes = 0;
 
             dadosPlanilha.forEach(row => {
