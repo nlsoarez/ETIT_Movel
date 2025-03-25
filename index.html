@@ -20,9 +20,6 @@
         .acima-media { color: blue; font-weight: bold; }
         .abaixo-media { color: orange; font-weight: bold; }
         .spinner { display: none; font-size: 18px; }
-        @media (max-width: 600px) {
-            .container { width: 95%; padding: 10px; }
-        }
     </style>
 </head>
 <body>
@@ -83,9 +80,6 @@
         });
         
         function consultarETIT() {
-            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula) return;
-            
             if (!dados.length) {
                 const storedData = localStorage.getItem("dadosPlanilha");
                 if (storedData) {
@@ -95,38 +89,33 @@
                 }
             }
             
-            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
-            let dentro = [];
-            let fora = [];
-            let totalTratado = 0;
+            let totalTratadoEquipe = 0;
+            let analistasContagem = {};
             
             dados.forEach(row => {
                 if (row.length < 5) return;
-                let incidente = row[0];
                 let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase();
-                let caixa = row[3] || "N/A";
-                let tipo = row[4] || "N/A";
-                
-                if (nomeAnalistaPlanilha === nomeAnalista) {
-                    totalTratado++;
-                    if (valido === "sim") dentro.push([incidente, caixa, tipo]);
-                    else if (valido === "não") fora.push([incidente, caixa, tipo]);
+                if (nomeAnalistaPlanilha) {
+                    analistasContagem[nomeAnalistaPlanilha] = (analistasContagem[nomeAnalistaPlanilha] || 0) + 1;
+                    totalTratadoEquipe++;
                 }
             });
             
-            let mediaEquipe = dados.length / Object.keys(matriculaToNome).length;
+            let mediaEquipe = totalTratadoEquipe / Object.keys(analistasContagem).length;
+            
+            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
+            if (!matricula) return;
+            
+            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
+            let totalTratado = analistasContagem[nomeAnalista] || 0;
             let statusMedia = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
-            let percentualDentro = totalTratado > 0 ? ((dentro.length / totalTratado) * 100).toFixed(2) : "0.00";
-            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
+            
+            document.getElementById("mediaEquipe").innerHTML = 
+                `<p><strong>Média da Equipe:</strong> ${mediaEquipe.toFixed(2)}</p>`;
             
             document.getElementById("resultado").innerHTML = 
                 `<p><strong>Nome:</strong> ${nomeAnalista}</p>
-                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>
-                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>
-                <p><strong>Média da Equipe:</strong> ${mediaEquipe.toFixed(2)} | <strong>Status:</strong> <span class="${statusMedia}">${totalTratado}</span></p>`;
-            atualizarTabela("tabelaDentro", dentro, "dentro");
-            atualizarTabela("tabelaFora", fora, "fora");
+                <p><strong>Total Tratado:</strong> ${totalTratado} | <strong>Status:</strong> <span class="${statusMedia}">${totalTratado >= mediaEquipe ? "Acima da média" : "Abaixo da média"}</span></p>`;
         }
     </script>
 </body>
