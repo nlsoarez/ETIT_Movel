@@ -132,13 +132,16 @@
             });
 
             const wb = XLSX.utils.book_new();
+            // Cria a aba de Incidentes Dentro
             const wsDentro = XLSX.utils.aoa_to_sheet([["Incidente", "Caixa", "Tipo"], ...dentro]);
+            // Cria a aba de Incidentes Fora
             const wsFora = XLSX.utils.aoa_to_sheet([["Incidente", "Caixa", "Tipo"], ...fora]);
             
             XLSX.utils.book_append_sheet(wb, wsDentro, "Incidentes Dentro");
             XLSX.utils.book_append_sheet(wb, wsFora, "Incidentes Fora");
 
-            XLSX.writeFile(wb, "incidentes.xlsx");
+            // Salva o arquivo
+            XLSX.writeFile(wb, "incidentes_separados.xlsx");
         }
     </script>
 </body>
