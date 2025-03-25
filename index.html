@@ -82,24 +82,6 @@
             reader.readAsArrayBuffer(file);
         });
         
-        function calcularMediaEquipe() {
-            let totais = {};
-            let totalIncidentes = 0;
-            let analistasContados = 0;
-            
-            dados.forEach(row => {
-                if (row.length < 5) return;
-                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                if (!totais[nomeAnalistaPlanilha]) {
-                    totais[nomeAnalistaPlanilha] = 0;
-                    analistasContados++;
-                }
-                totais[nomeAnalistaPlanilha]++;
-                totalIncidentes++;
-            });
-            return totalIncidentes / analistasContados;
-        }
-        
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim().toUpperCase();
             if (!matricula) return;
@@ -109,15 +91,14 @@
                 if (storedData) {
                     dados = JSON.parse(storedData);
                 } else {
-                    alert("Por favor, carregue uma planilha primeiro.");
                     return;
                 }
             }
             
             const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
-            let totalIncidentesAnalista = 0;
             let dentro = [];
             let fora = [];
+            let totalTratado = 0;
             
             dados.forEach(row => {
                 if (row.length < 5) return;
@@ -128,18 +109,24 @@
                 let tipo = row[4] || "N/A";
                 
                 if (nomeAnalistaPlanilha === nomeAnalista) {
-                    totalIncidentesAnalista++;
+                    totalTratado++;
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
                     else if (valido === "não") fora.push([incidente, caixa, tipo]);
                 }
             });
             
-            let mediaEquipe = calcularMediaEquipe();
-            let statusMedia = totalIncidentesAnalista >= mediaEquipe ? "acima-media" : "abaixo-media";
+            let mediaEquipe = dados.length / Object.keys(matriculaToNome).length;
+            let statusMedia = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
+            let percentualDentro = totalTratado > 0 ? ((dentro.length / totalTratado) * 100).toFixed(2) : "0.00";
+            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
             
-            document.getElementById("mediaEquipe").innerHTML = 
-                `<p><strong>Média da Equipe:</strong> ${mediaEquipe.toFixed(2)}</p>
-                <p><strong>Incidentes do Analista:</strong> <span class="${statusMedia}">${totalIncidentesAnalista}</span></p>`;
+            document.getElementById("resultado").innerHTML = 
+                `<p><strong>Nome:</strong> ${nomeAnalista}</p>
+                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>
+                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>
+                <p><strong>Média da Equipe:</strong> ${mediaEquipe.toFixed(2)} | <strong>Status:</strong> <span class="${statusMedia}">${totalTratado}</span></p>`;
+            atualizarTabela("tabelaDentro", dentro, "dentro");
+            atualizarTabela("tabelaFora", fora, "fora");
         }
     </script>
 </body>
