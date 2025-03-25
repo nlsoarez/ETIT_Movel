@@ -141,6 +141,18 @@
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
         }
+        
+        function atualizarTabela(idTabela, dados, classe) {
+            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
+            tabela.innerHTML = "";
+            dados.forEach(item => {
+                let row = tabela.insertRow();
+                row.insertCell(0).innerText = item[0]; // Incidente
+                row.insertCell(1).innerText = item[1]; // Caixa
+                row.insertCell(2).innerText = item[2]; // Tipo
+                row.className = classe;
+            });
+        }
     </script>
 </body>
 </html>
