@@ -79,6 +79,25 @@
             reader.readAsArrayBuffer(file);
         });
         
+        function calcularMediaEquipe() {
+            let totais = {};
+            let totalGeral = 0;
+            let totalAnalistas = 0;
+            
+            dados.forEach(row => {
+                if (row.length < 5) return;
+                let nome = row[1]?.toString().trim().toUpperCase();
+                if (!totais[nome]) {
+                    totais[nome] = 0;
+                    totalAnalistas++;
+                }
+                totais[nome]++;
+                totalGeral++;
+            });
+            
+            return totalAnalistas > 0 ? (totalGeral / totalAnalistas).toFixed(2) : 0;
+        }
+        
         function consultarETIT() {
             if (!dados.length) {
                 const storedData = localStorage.getItem("dadosPlanilha");
@@ -111,24 +130,16 @@
             });
             
             let totalTratado = dentro.length + fora.length;
+            let mediaEquipe = calcularMediaEquipe();
+            let comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
             
-            document.getElementById("resultado").innerHTML +=
-                `<p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>`;
+            document.getElementById("resultado").innerHTML =
+                `<p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>
+                <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
+                <p><strong>Comparação com a Média:</strong> <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span></p>`;
             
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
-        }
-        
-        function atualizarTabela(idTabela, dados, classe) {
-            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
-            tabela.innerHTML = "";
-            dados.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item[0];
-                row.insertCell(1).innerText = item[1];
-                row.insertCell(2).innerText = item[2];
-                row.className = classe;
-            });
         }
     </script>
 </body>
