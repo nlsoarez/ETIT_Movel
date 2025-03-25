@@ -18,6 +18,9 @@
         .meta-atingida { color: green; font-weight: bold; }
         .meta-nao-atingida { color: red; font-weight: bold; }
         .spinner { display: none; font-size: 18px; }
+        @media (max-width: 600px) {
+            .container { width: 95%; padding: 10px; }
+        }
     </style>
 </head>
 <body>
@@ -25,7 +28,6 @@
         <h2>Painel ETIT Móvel</h2>
         <input type="file" id="upload" accept=".xlsx">
         <input type="text" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
-        <button onclick="exportarDados()">Exportar Dados</button>
         <div id="resultado"></div>
         <div class="spinner" id="spinner">⏳ Carregando...</div>
         <h3>Incidentes Dentro</h3>
@@ -56,18 +58,22 @@
             
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
-                const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-                
-                document.getElementById("spinner").style.display = "none";
-                if (dados.length === 0 || dados[0].length < 5) {
-                    alert("Erro: A planilha está vazia ou com formato inválido!");
-                    dados = [];
-                } else {
-                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                    alert("Planilha carregada com sucesso!");
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                    
+                    document.getElementById("spinner").style.display = "none";
+                    if (dados.length === 0 || dados[0].length < 5) {
+                        alert("Erro: A planilha está vazia ou com formato inválido!");
+                        dados = [];
+                    } else {
+                        localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                        alert("Planilha carregada com sucesso!");
+                    }
+                } catch (error) {
+                    alert("Erro ao carregar a planilha!");
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -82,6 +88,7 @@
                 if (storedData) {
                     dados = JSON.parse(storedData);
                 } else {
+                    alert("Por favor, carregue uma planilha primeiro.");
                     return;
                 }
             }
@@ -104,8 +111,14 @@
                 }
             });
             
+            let total = dentro.length + fora.length;
+            let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
+            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
+            
             document.getElementById("resultado").innerHTML = 
-                `<p><strong>Nome:</strong> ${nomeAnalista}</p>`;
+                `<p><strong>Nome:</strong> ${nomeAnalista}</p>
+                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
+                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
         }
@@ -120,15 +133,6 @@
                 row.insertCell(2).innerText = item[2];
                 row.className = classe;
             });
-        }
-
-        function exportarDados() {
-            const wb = XLSX.utils.book_new();
-            const wsDentro = XLSX.utils.aoa_to_sheet([['Incidente', 'Caixa', 'Tipo'], ...dentro]);
-            XLSX.utils.book_append_sheet(wb, wsDentro, "Incidentes Dentro");
-            const wsFora = XLSX.utils.aoa_to_sheet([['Incidente', 'Caixa', 'Tipo'], ...fora]);
-            XLSX.utils.book_append_sheet(wb, wsFora, "Incidentes Fora");
-            XLSX.writeFile(wb, "Incidentes.xlsx");
         }
     </script>
 </body>
