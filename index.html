@@ -24,7 +24,9 @@
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
         <input type="file" id="upload" accept=".xlsx">
-        <input type="text" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
+        <input list="matriculas" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
+        <datalist id="matriculas"></datalist>
+        <button onclick="exportarDados()">Exportar Dados</button>
         <div id="resultado"></div>
         <div class="spinner" id="spinner">⏳ Carregando...</div>
         <h3>Incidentes Dentro</h3>
@@ -58,44 +60,33 @@
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
                 
                 document.getElementById("spinner").style.display = "none";
-                if (dados.length === 0 || dados[0].length < 5) {
+                
+                if (jsonData.length === 0 || jsonData[0].length < 5) {
                     alert("Erro: A planilha está vazia ou com formato inválido!");
-                    dados = [];
-                } else {
-                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                    alert("Planilha carregada com sucesso!");
+                    return;
                 }
+                dados = jsonData;
+                localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
         });
         
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula) return;
+            if (!matricula || !matriculaToNome[matricula]) return;
             
-            if (!dados.length) {
-                const storedData = localStorage.getItem("dadosPlanilha");
-                if (storedData) {
-                    dados = JSON.parse(storedData);
-                } else {
-                    return;
-                }
-            }
-            
-            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
+            const nomeAnalista = matriculaToNome[matricula];
             let dentro = [];
             let fora = [];
             
             dados.forEach(row => {
                 if (row.length < 5) return;
-                let incidente = row[0];
-                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase();
-                let caixa = row[3] || "N/A";
-                let tipo = row[4] || "N/A";
+                let incidente = row[0], nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
+                let valido = row[2]?.toString().trim().toLowerCase(), caixa = row[3] || "N/A", tipo = row[4] || "N/A";
                 
                 if (nomeAnalistaPlanilha === nomeAnalista) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
