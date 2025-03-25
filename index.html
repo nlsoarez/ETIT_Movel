@@ -24,8 +24,7 @@
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
         <input type="file" id="upload" accept=".xlsx">
-        <input list="matriculas" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
-        <datalist id="matriculas"></datalist>
+        <input type="text" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
         <button onclick="exportarDados()">Exportar Dados</button>
         <div id="resultado"></div>
         <div class="spinner" id="spinner">⏳ Carregando...</div>
@@ -48,64 +47,69 @@
             "N6172207": "CHARLES DOS SANTOS PAIVA",
             "F204763": "RODRIGO REIS DUARTE"
         };
-
+        
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
-
+            
             document.getElementById("spinner").style.display = "block";
-
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 const data = new Uint8Array(e.target.result);
                 const workbook = XLSX.read(data, { type: 'array' });
                 const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                const jsonData = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
+                dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+                
                 document.getElementById("spinner").style.display = "none";
-
-                if (jsonData.length === 0 || jsonData[0].length < 5) {
+                if (dados.length === 0 || dados[0].length < 5) {
                     alert("Erro: A planilha está vazia ou com formato inválido!");
-                    return;
+                    dados = [];
+                } else {
+                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                    alert("Planilha carregada com sucesso!");
                 }
-                dados = jsonData;
-                localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                alert("Planilha carregada com sucesso!");
             };
             reader.readAsArrayBuffer(file);
         });
-
+        
         function consultarETIT() {
             const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula || !matriculaToNome[matricula]) return;
-
-            const nomeAnalista = matriculaToNome[matricula];
+            if (!matricula) return;
+            
+            if (!dados.length) {
+                const storedData = localStorage.getItem("dadosPlanilha");
+                if (storedData) {
+                    dados = JSON.parse(storedData);
+                } else {
+                    return;
+                }
+            }
+            
+            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
             let dentro = [];
             let fora = [];
-
+            
             dados.forEach(row => {
                 if (row.length < 5) return;
-                let incidente = row[0], nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase(), caixa = row[3] || "N/A", tipo = row[4] || "N/A";
-
+                let incidente = row[0];
+                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
+                let valido = row[2]?.toString().trim().toLowerCase();
+                let caixa = row[3] || "N/A";
+                let tipo = row[4] || "N/A";
+                
                 if (nomeAnalistaPlanilha === nomeAnalista) {
                     if (valido === "sim") dentro.push([incidente, caixa, tipo]);
                     else if (valido === "não") fora.push([incidente, caixa, tipo]);
                 }
             });
-
-            let total = dentro.length + fora.length;
-            let percentualDentro = total > 0 ? ((dentro.length / total) * 100).toFixed(2) : "0.00";
-            let metaStatus = percentualDentro >= 85 ? "meta-atingida" : "meta-nao-atingida";
-
+            
             document.getElementById("resultado").innerHTML = 
-                `<p><strong>Nome:</strong> ${nomeAnalista}</p>
-                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${total}</p>
-                <p><strong>Percentual Dentro:</strong> <span class="${metaStatus}">${percentualDentro}%</span> (Meta: 85%)</p>`;
+                `<p><strong>Nome:</strong> ${nomeAnalista}</p>`;
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
         }
-
+        
         function atualizarTabela(idTabela, dados, classe) {
             const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
             tabela.innerHTML = "";
@@ -119,29 +123,12 @@
         }
 
         function exportarDados() {
-            const dentro = [];
-            const fora = [];
-            
-            dados.forEach(row => {
-                if (row.length < 5) return;
-                let incidente = row[0], nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase(), caixa = row[3] || "N/A", tipo = row[4] || "N/A";
-                
-                if (valido === "sim") dentro.push([incidente, caixa, tipo]);
-                else if (valido === "não") fora.push([incidente, caixa, tipo]);
-            });
-
             const wb = XLSX.utils.book_new();
-            // Cria a aba de Incidentes Dentro
-            const wsDentro = XLSX.utils.aoa_to_sheet([["Incidente", "Caixa", "Tipo"], ...dentro]);
-            // Cria a aba de Incidentes Fora
-            const wsFora = XLSX.utils.aoa_to_sheet([["Incidente", "Caixa", "Tipo"], ...fora]);
-            
+            const wsDentro = XLSX.utils.aoa_to_sheet([['Incidente', 'Caixa', 'Tipo'], ...dentro]);
             XLSX.utils.book_append_sheet(wb, wsDentro, "Incidentes Dentro");
+            const wsFora = XLSX.utils.aoa_to_sheet([['Incidente', 'Caixa', 'Tipo'], ...fora]);
             XLSX.utils.book_append_sheet(wb, wsFora, "Incidentes Fora");
-
-            // Salva o arquivo
-            XLSX.writeFile(wb, "incidentes_separados.xlsx");
+            XLSX.writeFile(wb, "Incidentes.xlsx");
         }
     </script>
 </body>
