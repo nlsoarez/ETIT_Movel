@@ -138,13 +138,15 @@
 
             let mediaEquipe = calcularMediaEquipe();
             let comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
-            let slaMeta = (totalDentroSLA / totalTratado) * 100 >= 80 ? "Dentro da meta" : "Fora da meta";
+            let slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
+            let slaMeta = slaPercentual >= 80 ? "Dentro da meta" : "Fora da meta";
 
             document.getElementById("resultado").innerHTML =
                 `<p><strong>Nome do Analista:</strong> ${nomeAnalista}</p>
                 <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>
                 <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
                 <p><strong>Comparação com a Média:</strong> <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span></p>
+                <p><strong>Percentual SLA:</strong> ${slaPercentual}%</p>
                 <p><strong>Status SLA (80%):</strong> ${slaMeta}</p>`;
 
             atualizarTabela("tabelaDentro", dentro, "dentro");
