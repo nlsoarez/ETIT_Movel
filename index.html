@@ -7,7 +7,119 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* (Manter os estilos anteriores) */
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f2f2f2; 
+            margin: 0;
+            padding: 0;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+        }
+        .input-group { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button { 
+            padding: 10px; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #D52B1E;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #B02218;
+        }
+        .table-container { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            margin: 20px 0; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            text-align: left;
+        }
+        th { 
+            background-color: #D52B1E; 
+            color: white; 
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .dentro { background-color: rgba(76, 175, 80, 0.1); }
+        .fora { background-color: rgba(255, 77, 77, 0.1); }
+        .meta-atingida { color: green; font-weight: bold; }
+        .meta-nao-atingida { color: red; font-weight: bold; }
+        .acima-media { color: blue; font-weight: bold; }
+        .abaixo-media { color: orange; font-weight: bold; }
+        .spinner { 
+            display: none; 
+            font-size: 18px; 
+            text-align: center;
+            padding: 20px;
+        }
+        .result-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            margin: 30px 0;
+            height: 300px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 10px;
+            }
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
@@ -32,8 +144,6 @@
         <div class="chart-container">
             <canvas id="performanceChart"></canvas>
         </div>
-        
-        <div class="stats-container" id="statsContainer"></div>
         
         <div class="table-container">
             <h3>Incidentes Dentro do SLA</h3>
@@ -67,7 +177,6 @@
     </div>
 
     <script>
-        // Esperar o DOM carregar completamente
         document.addEventListener('DOMContentLoaded', function() {
             let dados = [];
             let performanceChart = null;
@@ -80,25 +189,17 @@
                 "F204763": "RODRIGO REIS DUARTE"
             };
 
-            // Mapeamento reverso para busca por nome
-            const nomeToMatricula = {};
-            for (const [matricula, nome] of Object.entries(matriculaToNome)) {
-                nomeToMatricula[nome.toUpperCase()] = matricula;
-            }
-
-            // Obter elementos do DOM
+            // Elementos do DOM
             const uploadInput = document.getElementById('upload');
             const consultarBtn = document.getElementById('consultarBtn');
             const limparBtn = document.getElementById('limparBtn');
-            
-            // Verificar se os elementos existem antes de adicionar event listeners
-            if (uploadInput && consultarBtn && limparBtn) {
-                uploadInput.addEventListener('change', handleFileUpload);
-                consultarBtn.addEventListener('click', consultarETIT);
-                limparBtn.addEventListener('click', limparDados);
-            } else {
-                console.error("Elementos do DOM não encontrados!");
-            }
+            const mediaEquipeDiv = document.getElementById('mediaEquipe');
+            const resultadoDiv = document.getElementById('resultado');
+
+            // Event Listeners
+            uploadInput.addEventListener('change', handleFileUpload);
+            consultarBtn.addEventListener('click', consultarETIT);
+            limparBtn.addEventListener('click', limparDados);
 
             function handleFileUpload(event) {
                 const file = event.target.files[0];
@@ -129,7 +230,6 @@
                         hideSpinner();
                         alert(`Erro ao processar o arquivo: ${error.message}`);
                         console.error(error);
-                        dados = [];
                         limparDados();
                     }
                 };
@@ -137,7 +237,6 @@
                 reader.onerror = function() {
                     hideSpinner();
                     alert("Erro ao ler o arquivo. Por favor, tente novamente.");
-                    dados = [];
                     limparDados();
                 };
                 
@@ -145,57 +244,60 @@
             }
 
             function processDataInBatches(rawData, batchSize) {
+                // Resetar completamente os dados
                 dados = [];
-                const totalRows = rawData.length - 1;
+                const totalRows = rawData.length - 1; // Excluindo cabeçalho
                 let processedRows = 0;
                 
                 function processBatch(start) {
                     const end = Math.min(start + batchSize, rawData.length);
                     
                     for (let i = start; i < end; i++) {
-                        if (i === 0) continue;
+                        if (i === 0) continue; // Pular cabeçalho
                         
                         const row = rawData[i];
-                        if (row.length >= 5) {
-                            const incidente = row[0]?.toString().trim() || "N/A";
-                            const nome = row[1]?.toString().trim().toUpperCase() || "N/A";
-                            const dentroSLA = row[2]?.toString().trim().toLowerCase() === "sim";
-                            const caixa = row[3]?.toString().trim() || "N/A";
-                            const tipo = row[4]?.toString().trim() || "N/A";
-                            
-                            dados.push([incidente, nome, dentroSLA, caixa, tipo]);
+                        if (row && row.length >= 5) {
+                            dados.push([
+                                row[0]?.toString().trim() || "N/A",     // Incidente
+                                row[1]?.toString().trim().toUpperCase() || "N/A", // Nome
+                                row[2]?.toString().trim().toLowerCase() === "sim", // Dentro SLA
+                                row[3]?.toString().trim() || "N/A",     // Caixa
+                                row[4]?.toString().trim() || "N/A"      // Tipo
+                            ]);
                         }
                         processedRows++;
-                        document.getElementById("progress").value = (processedRows / totalRows) * 100;
+                        updateProgress(processedRows, totalRows);
                     }
                     
                     if (end < rawData.length) {
                         setTimeout(() => processBatch(end), 0);
                     } else {
-                        localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                        hideSpinner();
-                        alert(`Planilha carregada com sucesso! ${dados.length} incidentes processados.`);
-                        updateTeamStats();
+                        finalizeProcessing();
                     }
                 }
                 
                 processBatch(1);
             }
 
-            function showSpinner() {
-                const spinner = document.getElementById("spinner");
-                if (spinner) spinner.style.display = "block";
-                const progress = document.getElementById("progress");
-                if (progress) progress.value = 0;
+            function updateProgress(processed, total) {
+                const progress = document.getElementById('progress');
+                if (progress) {
+                    progress.value = (processed / total) * 100;
+                }
             }
 
-            function hideSpinner() {
-                const spinner = document.getElementById("spinner");
-                if (spinner) spinner.style.display = "none";
+            function finalizeProcessing() {
+                localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                hideSpinner();
+                
+                // Exibir estatísticas reais dos dados processados
+                const totalIncidents = dados.length;
+                alert(`Planilha carregada com sucesso! ${totalIncidents} incidentes processados.`);
+                
+                updateTeamStats();
             }
 
             function updateTeamStats() {
-                const mediaEquipeDiv = document.getElementById("mediaEquipe");
                 if (!mediaEquipeDiv) return;
                 
                 if (!dados || dados.length === 0) {
@@ -203,15 +305,18 @@
                     return;
                 }
                 
+                // Calcular estatísticas reais
                 const totalIncidents = dados.length;
                 const dentroSLA = dados.filter(row => row[2]).length;
                 const foraSLA = totalIncidents - dentroSLA;
                 const percentualSLA = (dentroSLA / totalIncidents * 100).toFixed(2);
                 
-                const analistas = new Set(dados.map(row => row[1]));
-                const numAnalistas = analistas.size;
+                // Analistas únicos
+                const analistasUnicos = [...new Set(dados.map(row => row[1]))];
+                const numAnalistas = analistasUnicos.length;
                 const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
                 
+                // Exibir apenas os dados calculados
                 mediaEquipeDiv.innerHTML = `
                     <div class="result-card">
                         <h3>Estatísticas Gerais da Equipe</h3>
@@ -246,11 +351,11 @@
                         try {
                             dados = JSON.parse(storedData);
                             if (!Array.isArray(dados) || dados.length === 0) {
-                                alert("Dados carregados são inválidos. Por favor, carregue uma planilha novamente.");
+                                alert("Por favor, carregue uma planilha válida primeiro.");
                                 return;
                             }
                         } catch (e) {
-                            alert("Erro ao carregar dados salvos. Por favor, carregue uma planilha novamente.");
+                            alert("Dados corrompidos. Por favor, carregue a planilha novamente.");
                             return;
                         }
                     } else {
@@ -265,14 +370,38 @@
                     return;
                 }
 
+                showSpinner();
+                
+                setTimeout(() => {
+                    try {
+                        const result = processAnalystData(input);
+                        if (result) {
+                            displayResults(result);
+                        }
+                    } catch (error) {
+                        alert("Erro ao processar consulta: " + error.message);
+                        console.error(error);
+                    } finally {
+                        hideSpinner();
+                    }
+                }, 100);
+            }
+
+            function processAnalystData(input) {
                 let nomeAnalista, matricula;
+                
+                // Verificar se é matrícula
                 if (matriculaToNome[input]) {
                     matricula = input;
                     nomeAnalista = matriculaToNome[input];
-                } else if (nomeToMatricula[input]) {
+                } 
+                // Verificar se é nome completo
+                else if (nomeToMatricula[input]) {
                     matricula = nomeToMatricula[input];
                     nomeAnalista = input;
-                } else {
+                }
+                // Busca parcial por nome
+                else {
                     const matchingNames = Object.values(matriculaToNome).filter(name => 
                         name.toUpperCase().includes(input)
                     );
@@ -283,49 +412,26 @@
                             ([m, n]) => n === nomeAnalista
                         )[0];
                     } else if (matchingNames.length > 1) {
-                        alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}. Por favor, seja mais específico.`);
-                        return;
+                        alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}`);
+                        return null;
                     } else {
-                        alert("Matrícula ou nome não encontrado. Verifique e tente novamente.");
-                        return;
+                        alert("Matrícula ou nome não encontrado.");
+                        return null;
                     }
                 }
 
-                showSpinner();
-                
-                setTimeout(() => {
-                    try {
-                        const result = processAnalystData(nomeAnalista);
-                        displayResults(nomeAnalista, matricula, result);
-                        hideSpinner();
-                    } catch (error) {
-                        hideSpinner();
-                        alert("Ocorreu um erro ao processar os dados: " + error.message);
-                        console.error(error);
-                    }
-                }, 100);
-            }
-
-            function processAnalystData(nomeAnalista) {
                 const dentro = [];
                 const fora = [];
                 let totalDentroSLA = 0;
                 let totalTratado = 0;
 
                 for (const row of dados) {
-                    const nomeAnalistaPlanilha = row[1];
-                    
-                    if (nomeAnalistaPlanilha === nomeAnalista) {
-                        const incidente = row[0];
-                        const dentroSLA = row[2];
-                        const caixa = row[3];
-                        const tipo = row[4];
-                        
-                        if (dentroSLA) {
-                            dentro.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
+                    if (row[1] === nomeAnalista) {
+                        if (row[2]) {
+                            dentro.push([row[0], row[3], row[4], row[1]]);
                             totalDentroSLA++;
                         } else {
-                            fora.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
+                            fora.push([row[0], row[3], row[4], row[1]]);
                         }
                         totalTratado++;
                     }
@@ -335,6 +441,8 @@
                 const slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
                 
                 return {
+                    nomeAnalista,
+                    matricula,
                     dentro,
                     fora,
                     totalDentroSLA,
@@ -344,11 +452,19 @@
                 };
             }
 
-            function displayResults(nomeAnalista, matricula, result) {
-                const resultadoDiv = document.getElementById("resultado");
+            function displayResults(result) {
                 if (!resultadoDiv) return;
                 
-                const { dentro, fora, totalDentroSLA, totalTratado, mediaEquipe, slaPercentual } = result;
+                const {
+                    nomeAnalista,
+                    matricula,
+                    dentro,
+                    fora,
+                    totalDentroSLA,
+                    totalTratado,
+                    mediaEquipe,
+                    slaPercentual
+                } = result;
                 
                 const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
                 const slaMeta = slaPercentual >= 80 ? "meta-atingida" : "meta-nao-atingida";
@@ -359,7 +475,7 @@
                         <div class="stats-container">
                             <div class="stat-card">
                                 <div>Dentro do SLA</div>
-                                <div class="stat-value">${dentro.length}</div>
+                                <div class="stat-value">${totalDentroSLA}</div>
                             </div>
                             <div class="stat-card">
                                 <div>Fora do SLA</div>
@@ -390,29 +506,27 @@
             function calcularMediaEquipe() {
                 if (!dados || dados.length === 0) return 0;
                 
-                const analystCounts = {};
-                let totalIncidents = 0;
+                const contagemPorAnalista = {};
                 
                 for (const row of dados) {
                     const nome = row[1];
-                    if (!analystCounts[nome]) {
-                        analystCounts[nome] = 0;
-                    }
-                    analystCounts[nome]++;
-                    totalIncidents++;
+                    contagemPorAnalista[nome] = (contagemPorAnalista[nome] || 0) + 1;
                 }
                 
-                const numAnalysts = Object.keys(analystCounts).length;
-                return numAnalysts > 0 ? (totalIncidents / numAnalysts).toFixed(2) : 0;
+                const numAnalistas = Object.keys(contagemPorAnalista).length;
+                if (numAnalistas === 0) return 0;
+                
+                const totalIncidentes = dados.length;
+                return (totalIncidentes / numAnalistas).toFixed(2);
             }
 
             function atualizarTabela(idTabela, tableData, rowClass) {
-                const tabela = document.getElementById(idTabela)?.getElementsByTagName("tbody")[0];
+                const tabela = document.getElementById(idTabela)?.getElementsByTagName('tbody')[0];
                 if (!tabela) return;
                 
                 tabela.innerHTML = "";
                 
-                if (tableData.length === 0) {
+                if (!tableData || tableData.length === 0) {
                     const row = tabela.insertRow();
                     const cell = row.insertCell(0);
                     cell.colSpan = 4;
@@ -421,15 +535,14 @@
                     return;
                 }
                 
-                for (const item of tableData) {
+                tableData.forEach(item => {
                     const row = tabela.insertRow();
                     row.className = rowClass;
-                    
                     for (let i = 0; i < 4; i++) {
                         const cell = row.insertCell(i);
                         cell.textContent = item[i] || "N/A";
                     }
-                }
+                });
             }
 
             function updateChart(nomeAnalista, dentro, fora, mediaEquipe) {
@@ -494,29 +607,44 @@
                 dados = [];
                 localStorage.removeItem("dadosPlanilha");
                 
-                const matriculaInput = document.getElementById('matricula');
-                if (matriculaInput) matriculaInput.value = "";
-                
-                const resultadoDiv = document.getElementById('resultado');
+                if (mediaEquipeDiv) mediaEquipeDiv.innerHTML = "";
                 if (resultadoDiv) resultadoDiv.innerHTML = "";
                 
-                const mediaEquipeDiv = document.getElementById('mediaEquipe');
-                if (mediaEquipeDiv) mediaEquipeDiv.innerHTML = "";
+                const elementsToClear = [
+                    'matricula', 'upload',
+                    'tabelaDentro', 'tabelaFora'
+                ];
                 
-                const tabelaDentro = document.getElementById('tabelaDentro')?.getElementsByTagName('tbody')[0];
-                if (tabelaDentro) tabelaDentro.innerHTML = "";
-                
-                const tabelaFora = document.getElementById('tabelaFora')?.getElementsByTagName('tbody')[0];
-                if (tabelaFora) tabelaFora.innerHTML = "";
-                
-                const uploadInput = document.getElementById('upload');
-                if (uploadInput) uploadInput.value = "";
+                elementsToClear.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (!element) return;
+                    
+                    if (element.tagName === 'INPUT') {
+                        element.value = "";
+                    } else if (id.startsWith('tabela')) {
+                        const tbody = element.getElementsByTagName('tbody')[0];
+                        if (tbody) tbody.innerHTML = "";
+                    }
+                });
                 
                 if (performanceChart) {
                     performanceChart.destroy();
                     performanceChart = null;
                 }
             }
+
+            function showSpinner() {
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.style.display = "block";
+            }
+
+            function hideSpinner() {
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.style.display = "none";
+            }
+
+            // Inicialização - garantir estado limpo
+            limparDados();
         });
     </script>
 </body>
