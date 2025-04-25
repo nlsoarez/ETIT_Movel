@@ -300,7 +300,12 @@
         }
 
         function updateTeamStats() {
-            if (dados.length === 0) return;
+            const mediaEquipeDiv = document.getElementById("mediaEquipe");
+            
+            if (!dados || dados.length === 0) {
+                mediaEquipeDiv.innerHTML = "";
+                return;
+            }
             
             const stats = {
                 totalIncidents: dados.length,
@@ -312,35 +317,47 @@
             stats.percentualSLA = (stats.dentroSLA / stats.totalIncidents * 100).toFixed(2);
             stats.mediaPorAnalista = (stats.totalIncidents / stats.analysts).toFixed(2);
             
-            document.getElementById("mediaEquipe").innerHTML = `
-                <div class="stats-container">
-                    <div class="stat-card">
-                        <div>Total de Incidentes</div>
-                        <div class="stat-value">${stats.totalIncidents}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div>Dentro do SLA</div>
-                        <div class="stat-value">${stats.dentroSLA}</div>
-                        <div>${stats.percentualSLA}%</div>
-                    </div>
-                    <div class="stat-card">
-                        <div>Fora do SLA</div>
-                        <div class="stat-value">${stats.foraSLA}</div>
-                    </div>
-                    <div class="stat-card">
-                        <div>Analistas</div>
-                        <div class="stat-value">${stats.analysts}</div>
-                        <div>Média: ${stats.mediaPorAnalista}</div>
+            mediaEquipeDiv.innerHTML = `
+                <div class="result-card">
+                    <h3>Estatísticas Gerais da Equipe</h3>
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div>Total de Incidentes</div>
+                            <div class="stat-value">${stats.totalIncidents}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Dentro do SLA</div>
+                            <div class="stat-value">${stats.dentroSLA}</div>
+                            <div>${stats.percentualSLA}%</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Fora do SLA</div>
+                            <div class="stat-value">${stats.foraSLA}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Analistas</div>
+                            <div class="stat-value">${stats.analysts}</div>
+                            <div>Média: ${stats.mediaPorAnalista}</div>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
         function consultarETIT() {
-            if (!dados.length) {
+            if (!dados || dados.length === 0) {
                 const storedData = localStorage.getItem("dadosPlanilha");
                 if (storedData) {
-                    dados = JSON.parse(storedData);
+                    try {
+                        dados = JSON.parse(storedData);
+                        if (!Array.isArray(dados) || dados.length === 0) {
+                            alert("Dados carregados são inválidos. Por favor, carregue uma planilha novamente.");
+                            return;
+                        }
+                    } catch (e) {
+                        alert("Erro ao carregar dados salvos. Por favor, carregue uma planilha novamente.");
+                        return;
+                    }
                 } else {
                     alert("Por favor, carregue uma planilha primeiro.");
                     return;
@@ -478,6 +495,8 @@
         }
 
         function calcularMediaEquipe() {
+            if (!dados || dados.length === 0) return 0;
+            
             const analystCounts = {};
             let totalIncidents = 0;
             
@@ -580,6 +599,7 @@
             document.getElementById('mediaEquipe').innerHTML = "";
             document.getElementById('tabelaDentro').getElementsByTagName('tbody')[0].innerHTML = "";
             document.getElementById('tabelaFora').getElementsByTagName('tbody')[0].innerHTML = "";
+            document.getElementById('upload').value = "";
             
             if (performanceChart) {
                 performanceChart.destroy();
@@ -587,12 +607,26 @@
             }
         }
 
-        // Carregar dados salvos ao iniciar
+        // Carregar dados salvos ao iniciar (somente se forem válidos)
         window.addEventListener('DOMContentLoaded', () => {
             const storedData = localStorage.getItem("dadosPlanilha");
             if (storedData) {
-                dados = JSON.parse(storedData);
-                updateTeamStats();
+                try {
+                    dados = JSON.parse(storedData);
+                    // Verificar se os dados são válidos antes de exibir
+                    if (Array.isArray(dados) && dados.length > 0) {
+                        // Não exibir estatísticas automaticamente
+                        // As estatísticas só serão exibidas após carregar nova planilha
+                        // ou ao consultar um analista
+                    } else {
+                        dados = [];
+                        localStorage.removeItem("dadosPlanilha");
+                    }
+                } catch (e) {
+                    console.error("Erro ao carregar dados salvos:", e);
+                    dados = [];
+                    localStorage.removeItem("dadosPlanilha");
+                }
             }
         });
     </script>
