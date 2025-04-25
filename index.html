@@ -7,176 +7,11 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background-color: #f2f2f2; 
-            margin: 0;
-            padding: 0;
-        }
-        .container { 
-            max-width: 1000px; 
-            margin: 20px auto; 
-            padding: 20px; 
-            background: white; 
-            border-radius: 10px; 
-            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
-        }
-        .input-group { 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        input, button { 
-            padding: 10px; 
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        button {
-            background-color: #D52B1E;
-            color: white;
-            cursor: pointer;
-            border: none;
-            transition: background-color 0.3s;
-        }
-        button:hover {
-            background-color: #B02218;
-        }
-        .table-container { 
-            max-height: 300px; 
-            overflow-y: auto; 
-            margin: 20px 0; 
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        table { 
-            width: 100%; 
-            border-collapse: collapse; 
-        }
-        th, td { 
-            padding: 10px; 
-            border: 1px solid #ddd; 
-            text-align: left;
-        }
-        th { 
-            background-color: #D52B1E; 
-            color: white; 
-            position: sticky;
-            top: 0;
-        }
-        tr:nth-child(even) {
-            background-color: #f9f9f9;
-        }
-        .dentro { background-color: rgba(76, 175, 80, 0.1); }
-        .fora { background-color: rgba(255, 77, 77, 0.1); }
-        .meta-atingida { color: green; font-weight: bold; }
-        .meta-nao-atingida { color: red; font-weight: bold; }
-        .acima-media { color: blue; font-weight: bold; }
-        .abaixo-media { color: orange; font-weight: bold; }
-        .spinner { 
-            display: none; 
-            font-size: 18px; 
-            text-align: center;
-            padding: 20px;
-        }
-        .result-card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        .chart-container {
-            margin: 30px 0;
-            height: 300px;
-        }
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin: 20px 0;
-        }
-        .stat-card {
-            background: white;
-            border-radius: 8px;
-            padding: 15px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-        @media (max-width: 768px) {
-            .container {
-                margin: 10px;
-                padding: 10px;
-            }
-            .stats-container {
-                grid-template-columns: 1fr;
-            }
-        }
+        /* (Manter os estilos anteriores) */
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Painel ETIT Móvel</h2>
-        
-        <div class="input-group">
-            <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
-            <input type="text" id="matricula" placeholder="Digite a matrícula" aria-label="Digite a matrícula">
-            <button onclick="consultarETIT()">Consultar</button>
-            <button onclick="limparDados()">Limpar</button>
-        </div>
-        
-        <div class="spinner" id="spinner">
-            <div>⏳ Processando dados, por favor aguarde...</div>
-            <progress id="progress" max="100" value="0" style="width:100%"></progress>
-        </div>
-        
-        <div id="resultado"></div>
-        <div id="mediaEquipe"></div>
-        
-        <div class="chart-container">
-            <canvas id="performanceChart"></canvas>
-        </div>
-        
-        <div class="stats-container" id="statsContainer"></div>
-        
-        <div class="table-container">
-            <h3>Incidentes Dentro do SLA</h3>
-            <table id="tabelaDentro">
-                <thead>
-                    <tr>
-                        <th>Incidente</th>
-                        <th>Caixa</th>
-                        <th>Tipo</th>
-                        <th>Analista</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-        
-        <div class="table-container">
-            <h3>Incidentes Fora do SLA</h3>
-            <table id="tabelaFora">
-                <thead>
-                    <tr>
-                        <th>Incidente</th>
-                        <th>Caixa</th>
-                        <th>Tipo</th>
-                        <th>Analista</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
-        </div>
-    </div>
+    <!-- (Manter a estrutura HTML anterior) -->
 
     <script>
         let dados = [];
@@ -208,7 +43,6 @@
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
                     
-                    // Verifica se há pelo menos uma planilha
                     if (workbook.SheetNames.length === 0) {
                         throw new Error("O arquivo Excel não contém planilhas.");
                     }
@@ -216,12 +50,10 @@
                     const sheet = workbook.Sheets[workbook.SheetNames[0]];
                     const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
                     
-                    // Validação básica da estrutura
                     if (rawData.length < 2 || rawData[0].length < 5) {
                         throw new Error("Formato de planilha inválido. Certifique-se de que contém pelo menos 5 colunas.");
                     }
                     
-                    // Processamento em lotes para melhor performance
                     processDataInBatches(rawData, 1000);
                     
                 } catch (error) {
@@ -229,6 +61,7 @@
                     alert(`Erro ao processar o arquivo: ${error.message}`);
                     console.error(error);
                     dados = [];
+                    limparDados();
                 }
             };
             
@@ -236,15 +69,16 @@
                 hideSpinner();
                 alert("Erro ao ler o arquivo. Por favor, tente novamente.");
                 dados = [];
+                limparDados();
             };
             
             reader.readAsArrayBuffer(file);
         });
 
         function processDataInBatches(rawData, batchSize) {
+            // Resetar dados anteriores
             dados = [];
-            const header = rawData[0];
-            const totalRows = rawData.length - 1; // Excluindo cabeçalho
+            const totalRows = rawData.length - 1;
             let processedRows = 0;
             
             function processBatch(start) {
@@ -254,49 +88,35 @@
                     if (i === 0) continue; // Pular cabeçalho
                     
                     const row = rawData[i];
-                    // Validar linha mínima
                     if (row.length >= 5) {
-                        // Padronizar dados
-                        const processedRow = [
-                            row[0]?.toString().trim() || "N/A",     // Incidente
-                            row[1]?.toString().trim().toUpperCase() || "N/A", // Nome
-                            (row[2]?.toString().trim().toLowerCase() === "sim"), // Dentro do SLA (boolean)
-                            row[3]?.toString().trim() || "N/A",     // Caixa
-                            row[4]?.toString().trim() || "N/A"      // Tipo
-                        ];
-                        dados.push(processedRow);
+                        // Processar cada linha individualmente
+                        const incidente = row[0]?.toString().trim() || "N/A";
+                        const nome = row[1]?.toString().trim().toUpperCase() || "N/A";
+                        const dentroSLA = row[2]?.toString().trim().toLowerCase() === "sim";
+                        const caixa = row[3]?.toString().trim() || "N/A";
+                        const tipo = row[4]?.toString().trim() || "N/A";
+                        
+                        dados.push([incidente, nome, dentroSLA, caixa, tipo]);
                     }
                     processedRows++;
-                    
-                    // Atualizar progresso
                     document.getElementById("progress").value = (processedRows / totalRows) * 100;
                 }
                 
                 if (end < rawData.length) {
-                    // Processar próximo lote assincronamente para não bloquear a UI
                     setTimeout(() => processBatch(end), 0);
                 } else {
-                    // Finalizado
                     localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
                     hideSpinner();
-                    alert(`Planilha carregada com sucesso! ${dados.length} registros processados.`);
                     
-                    // Atualizar estatísticas gerais
+                    // Exibir estatísticas reais após processamento
+                    const totalIncidents = dados.length;
+                    alert(`Planilha carregada com sucesso! ${totalIncidents} incidentes processados.`);
+                    
                     updateTeamStats();
                 }
             }
             
-            // Iniciar processamento
             processBatch(1);
-        }
-
-        function showSpinner() {
-            document.getElementById("spinner").style.display = "block";
-            document.getElementById("progress").value = 0;
-        }
-
-        function hideSpinner() {
-            document.getElementById("spinner").style.display = "none";
         }
 
         function updateTeamStats() {
@@ -307,15 +127,16 @@
                 return;
             }
             
-            const stats = {
-                totalIncidents: dados.length,
-                dentroSLA: dados.filter(row => row[2]).length,
-                foraSLA: dados.filter(row => !row[2]).length,
-                analysts: new Set(dados.map(row => row[1])).size
-            };
+            // Calcular estatísticas reais
+            const totalIncidents = dados.length;
+            const dentroSLA = dados.filter(row => row[2]).length;
+            const foraSLA = totalIncidents - dentroSLA;
+            const percentualSLA = (dentroSLA / totalIncidents * 100).toFixed(2);
             
-            stats.percentualSLA = (stats.dentroSLA / stats.totalIncidents * 100).toFixed(2);
-            stats.mediaPorAnalista = (stats.totalIncidents / stats.analysts).toFixed(2);
+            // Calcular número de analistas únicos e média
+            const analistas = new Set(dados.map(row => row[1]));
+            const numAnalistas = analistas.size;
+            const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
             
             mediaEquipeDiv.innerHTML = `
                 <div class="result-card">
@@ -323,277 +144,32 @@
                     <div class="stats-container">
                         <div class="stat-card">
                             <div>Total de Incidentes</div>
-                            <div class="stat-value">${stats.totalIncidents}</div>
+                            <div class="stat-value">${totalIncidents}</div>
                         </div>
                         <div class="stat-card">
                             <div>Dentro do SLA</div>
-                            <div class="stat-value">${stats.dentroSLA}</div>
-                            <div>${stats.percentualSLA}%</div>
+                            <div class="stat-value">${dentroSLA}</div>
+                            <div>${percentualSLA}%</div>
                         </div>
                         <div class="stat-card">
                             <div>Fora do SLA</div>
-                            <div class="stat-value">${stats.foraSLA}</div>
+                            <div class="stat-value">${foraSLA}</div>
                         </div>
                         <div class="stat-card">
                             <div>Analistas</div>
-                            <div class="stat-value">${stats.analysts}</div>
-                            <div>Média: ${stats.mediaPorAnalista}</div>
+                            <div class="stat-value">${numAnalistas}</div>
+                            <div>Média: ${mediaPorAnalista}</div>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        function consultarETIT() {
-            if (!dados || dados.length === 0) {
-                const storedData = localStorage.getItem("dadosPlanilha");
-                if (storedData) {
-                    try {
-                        dados = JSON.parse(storedData);
-                        if (!Array.isArray(dados) || dados.length === 0) {
-                            alert("Dados carregados são inválidos. Por favor, carregue uma planilha novamente.");
-                            return;
-                        }
-                    } catch (e) {
-                        alert("Erro ao carregar dados salvos. Por favor, carregue uma planilha novamente.");
-                        return;
-                    }
-                } else {
-                    alert("Por favor, carregue uma planilha primeiro.");
-                    return;
-                }
-            }
-
-            const input = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!input) {
-                alert("Por favor, digite uma matrícula ou nome para consultar.");
-                return;
-            }
-
-            // Verifica se é matrícula ou nome
-            let nomeAnalista, matricula;
-            if (matriculaToNome[input]) {
-                matricula = input;
-                nomeAnalista = matriculaToNome[input];
-            } else if (nomeToMatricula[input]) {
-                matricula = nomeToMatricula[input];
-                nomeAnalista = input;
-            } else {
-                // Tentar encontrar correspondência parcial no nome
-                const matchingNames = Object.values(matriculaToNome).filter(name => 
-                    name.toUpperCase().includes(input)
-                );
-                
-                if (matchingNames.length === 1) {
-                    nomeAnalista = matchingNames[0];
-                    matricula = Object.entries(matriculaToNome).find(
-                        ([m, n]) => n === nomeAnalista
-                    )[0];
-                } else if (matchingNames.length > 1) {
-                    alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}. Por favor, seja mais específico.`);
-                    return;
-                } else {
-                    alert("Matrícula ou nome não encontrado. Verifique e tente novamente.");
-                    return;
-                }
-            }
-
-            showSpinner();
-            
-            // Processamento assíncrono para não bloquear a UI
-            setTimeout(() => {
-                try {
-                    const result = processAnalystData(nomeAnalista);
-                    displayResults(nomeAnalista, matricula, result);
-                    hideSpinner();
-                } catch (error) {
-                    hideSpinner();
-                    alert("Ocorreu um erro ao processar os dados: " + error.message);
-                    console.error(error);
-                }
-            }, 100);
-        }
-
-        function processAnalystData(nomeAnalista) {
-            const dentro = [];
-            const fora = [];
-            let totalDentroSLA = 0;
-            let totalTratado = 0;
-
-            for (const row of dados) {
-                const nomeAnalistaPlanilha = row[1];
-                
-                if (nomeAnalistaPlanilha === nomeAnalista) {
-                    const incidente = row[0];
-                    const dentroSLA = row[2];
-                    const caixa = row[3];
-                    const tipo = row[4];
-                    
-                    if (dentroSLA) {
-                        dentro.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
-                        totalDentroSLA++;
-                    } else {
-                        fora.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
-                    }
-                    totalTratado++;
-                }
-            }
-
-            const mediaEquipe = calcularMediaEquipe();
-            const slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
-            
-            return {
-                dentro,
-                fora,
-                totalDentroSLA,
-                totalTratado,
-                mediaEquipe,
-                slaPercentual
-            };
-        }
-
-        function displayResults(nomeAnalista, matricula, result) {
-            const { dentro, fora, totalDentroSLA, totalTratado, mediaEquipe, slaPercentual } = result;
-            
-            const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
-            const slaMeta = slaPercentual >= 80 ? "meta-atingida" : "meta-nao-atingida";
-            
-            document.getElementById("resultado").innerHTML = `
-                <div class="result-card">
-                    <h3>Resultado para: ${nomeAnalista} (${matricula})</h3>
-                    <div class="stats-container">
-                        <div class="stat-card">
-                            <div>Dentro do SLA</div>
-                            <div class="stat-value">${dentro.length}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Fora do SLA</div>
-                            <div class="stat-value">${fora.length}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Total Tratado</div>
-                            <div class="stat-value">${totalTratado}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Percentual SLA</div>
-                            <div class="stat-value ${slaMeta}">${slaPercentual}%</div>
-                            <div>Meta: 80%</div>
-                        </div>
-                    </div>
-                    <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
-                    <p><strong>Comparação com a Média:</strong> 
-                        <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span>
-                    </p>
-                </div>
-            `;
-            
-            atualizarTabela("tabelaDentro", dentro, "dentro");
-            atualizarTabela("tabelaFora", fora, "fora");
-            
-            // Atualizar gráfico
-            updateChart(nomeAnalista, totalDentroSLA, fora.length, mediaEquipe);
-        }
-
-        function calcularMediaEquipe() {
-            if (!dados || dados.length === 0) return 0;
-            
-            const analystCounts = {};
-            let totalIncidents = 0;
-            
-            for (const row of dados) {
-                const nome = row[1];
-                if (!analystCounts[nome]) {
-                    analystCounts[nome] = 0;
-                }
-                analystCounts[nome]++;
-                totalIncidents++;
-            }
-            
-            const numAnalysts = Object.keys(analystCounts).length;
-            return numAnalysts > 0 ? (totalIncidents / numAnalysts).toFixed(2) : 0;
-        }
-
-        function atualizarTabela(idTabela, dados, classe) {
-            const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
-            tabela.innerHTML = "";
-            
-            if (dados.length === 0) {
-                const row = tabela.insertRow();
-                const cell = row.insertCell(0);
-                cell.colSpan = 4;
-                cell.textContent = "Nenhum incidente encontrado";
-                cell.style.textAlign = "center";
-                return;
-            }
-            
-            for (const item of dados) {
-                const row = tabela.insertRow();
-                row.className = classe;
-                
-                for (let i = 0; i < 4; i++) {
-                    const cell = row.insertCell(i);
-                    cell.textContent = item[i] || "N/A";
-                }
-            }
-        }
-
-        function updateChart(nomeAnalista, dentro, fora, mediaEquipe) {
-            const ctx = document.getElementById('performanceChart').getContext('2d');
-            
-            // Destruir gráfico anterior se existir
-            if (performanceChart) {
-                performanceChart.destroy();
-            }
-            
-            performanceChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: ['Dentro SLA', 'Fora SLA', 'Média Equipe'],
-                    datasets: [{
-                        label: nomeAnalista,
-                        data: [dentro, fora, mediaEquipe],
-                        backgroundColor: [
-                            'rgba(75, 192, 192, 0.7)',
-                            'rgba(255, 99, 132, 0.7)',
-                            'rgba(54, 162, 235, 0.7)'
-                        ],
-                        borderColor: [
-                            'rgba(75, 192, 192, 1)',
-                            'rgba(255, 99, 132, 1)',
-                            'rgba(54, 162, 235, 1)'
-                        ],
-                        borderWidth: 1
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            title: {
-                                display: true,
-                                text: 'Quantidade de Incidentes'
-                            }
-                        }
-                    },
-                    plugins: {
-                        title: {
-                            display: true,
-                            text: 'Desempenho do Analista',
-                            font: {
-                                size: 16
-                            }
-                        },
-                        legend: {
-                            display: false
-                        }
-                    }
-                }
-            });
-        }
-
+        // (Manter as outras funções como showSpinner, hideSpinner, consultarETIT, etc.)
+        
         function limparDados() {
+            dados = [];
+            localStorage.removeItem("dadosPlanilha");
             document.getElementById('matricula').value = "";
             document.getElementById('resultado').innerHTML = "";
             document.getElementById('mediaEquipe').innerHTML = "";
@@ -607,27 +183,9 @@
             }
         }
 
-        // Carregar dados salvos ao iniciar (somente se forem válidos)
         window.addEventListener('DOMContentLoaded', () => {
-            const storedData = localStorage.getItem("dadosPlanilha");
-            if (storedData) {
-                try {
-                    dados = JSON.parse(storedData);
-                    // Verificar se os dados são válidos antes de exibir
-                    if (Array.isArray(dados) && dados.length > 0) {
-                        // Não exibir estatísticas automaticamente
-                        // As estatísticas só serão exibidas após carregar nova planilha
-                        // ou ao consultar um analista
-                    } else {
-                        dados = [];
-                        localStorage.removeItem("dadosPlanilha");
-                    }
-                } catch (e) {
-                    console.error("Erro ao carregar dados salvos:", e);
-                    dados = [];
-                    localStorage.removeItem("dadosPlanilha");
-                }
-            }
+            // Não carregar dados automaticamente ao iniciar
+            limparDados();
         });
     </script>
 </body>
