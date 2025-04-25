@@ -11,181 +11,512 @@
     </style>
 </head>
 <body>
-    <!-- (Manter a estrutura HTML anterior) -->
+    <div class="container">
+        <h2>Painel ETIT Móvel</h2>
+        
+        <div class="input-group">
+            <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
+            <input type="text" id="matricula" placeholder="Digite a matrícula" aria-label="Digite a matrícula">
+            <button id="consultarBtn">Consultar</button>
+            <button id="limparBtn">Limpar</button>
+        </div>
+        
+        <div class="spinner" id="spinner">
+            <div>⏳ Processando dados, por favor aguarde...</div>
+            <progress id="progress" max="100" value="0" style="width:100%"></progress>
+        </div>
+        
+        <div id="resultado"></div>
+        <div id="mediaEquipe"></div>
+        
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
+        </div>
+        
+        <div class="stats-container" id="statsContainer"></div>
+        
+        <div class="table-container">
+            <h3>Incidentes Dentro do SLA</h3>
+            <table id="tabelaDentro">
+                <thead>
+                    <tr>
+                        <th>Incidente</th>
+                        <th>Caixa</th>
+                        <th>Tipo</th>
+                        <th>Analista</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <div class="table-container">
+            <h3>Incidentes Fora do SLA</h3>
+            <table id="tabelaFora">
+                <thead>
+                    <tr>
+                        <th>Incidente</th>
+                        <th>Caixa</th>
+                        <th>Tipo</th>
+                        <th>Analista</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
-        let dados = [];
-        let performanceChart = null;
-        const matriculaToNome = {
-            "N6104793": "BRUNO MARIANO VILACA",
-            "N5931955": "THIAGO DE SOUZA INACIO",
-            "N6173067": "JULIANA RIBEIRO GALHÃO",
-            "N6071740": "THIAGO BARBOZA DOS SANTOS",
-            "N6172207": "CHARLES DOS SANTOS PAIVA",
-            "F204763": "RODRIGO REIS DUARTE"
-        };
+        // Esperar o DOM carregar completamente
+        document.addEventListener('DOMContentLoaded', function() {
+            let dados = [];
+            let performanceChart = null;
+            const matriculaToNome = {
+                "N6104793": "BRUNO MARIANO VILACA",
+                "N5931955": "THIAGO DE SOUZA INACIO",
+                "N6173067": "JULIANA RIBEIRO GALHÃO",
+                "N6071740": "THIAGO BARBOZA DOS SANTOS",
+                "N6172207": "CHARLES DOS SANTOS PAIVA",
+                "F204763": "RODRIGO REIS DUARTE"
+            };
 
-        // Mapeamento reverso para busca por nome
-        const nomeToMatricula = {};
-        for (const [matricula, nome] of Object.entries(matriculaToNome)) {
-            nomeToMatricula[nome.toUpperCase()] = matricula;
-        }
+            // Mapeamento reverso para busca por nome
+            const nomeToMatricula = {};
+            for (const [matricula, nome] of Object.entries(matriculaToNome)) {
+                nomeToMatricula[nome.toUpperCase()] = matricula;
+            }
 
-        document.getElementById('upload').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            showSpinner();
+            // Obter elementos do DOM
+            const uploadInput = document.getElementById('upload');
+            const consultarBtn = document.getElementById('consultarBtn');
+            const limparBtn = document.getElementById('limparBtn');
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    if (workbook.SheetNames.length === 0) {
-                        throw new Error("O arquivo Excel não contém planilhas.");
+            // Verificar se os elementos existem antes de adicionar event listeners
+            if (uploadInput && consultarBtn && limparBtn) {
+                uploadInput.addEventListener('change', handleFileUpload);
+                consultarBtn.addEventListener('click', consultarETIT);
+                limparBtn.addEventListener('click', limparDados);
+            } else {
+                console.error("Elementos do DOM não encontrados!");
+            }
+
+            function handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (!file) return;
+
+                showSpinner();
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        
+                        if (workbook.SheetNames.length === 0) {
+                            throw new Error("O arquivo Excel não contém planilhas.");
+                        }
+                        
+                        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                        const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                        
+                        if (rawData.length < 2 || rawData[0].length < 5) {
+                            throw new Error("Formato de planilha inválido. Certifique-se de que contém pelo menos 5 colunas.");
+                        }
+                        
+                        processDataInBatches(rawData, 1000);
+                        
+                    } catch (error) {
+                        hideSpinner();
+                        alert(`Erro ao processar o arquivo: ${error.message}`);
+                        console.error(error);
+                        dados = [];
+                        limparDados();
                     }
-                    
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
-                    
-                    if (rawData.length < 2 || rawData[0].length < 5) {
-                        throw new Error("Formato de planilha inválido. Certifique-se de que contém pelo menos 5 colunas.");
-                    }
-                    
-                    processDataInBatches(rawData, 1000);
-                    
-                } catch (error) {
+                };
+                
+                reader.onerror = function() {
                     hideSpinner();
-                    alert(`Erro ao processar o arquivo: ${error.message}`);
-                    console.error(error);
+                    alert("Erro ao ler o arquivo. Por favor, tente novamente.");
                     dados = [];
                     limparDados();
-                }
-            };
-            
-            reader.onerror = function() {
-                hideSpinner();
-                alert("Erro ao ler o arquivo. Por favor, tente novamente.");
+                };
+                
+                reader.readAsArrayBuffer(file);
+            }
+
+            function processDataInBatches(rawData, batchSize) {
                 dados = [];
-                limparDados();
-            };
-            
-            reader.readAsArrayBuffer(file);
-        });
-
-        function processDataInBatches(rawData, batchSize) {
-            // Resetar dados anteriores
-            dados = [];
-            const totalRows = rawData.length - 1;
-            let processedRows = 0;
-            
-            function processBatch(start) {
-                const end = Math.min(start + batchSize, rawData.length);
+                const totalRows = rawData.length - 1;
+                let processedRows = 0;
                 
-                for (let i = start; i < end; i++) {
-                    if (i === 0) continue; // Pular cabeçalho
+                function processBatch(start) {
+                    const end = Math.min(start + batchSize, rawData.length);
                     
-                    const row = rawData[i];
-                    if (row.length >= 5) {
-                        // Processar cada linha individualmente
-                        const incidente = row[0]?.toString().trim() || "N/A";
-                        const nome = row[1]?.toString().trim().toUpperCase() || "N/A";
-                        const dentroSLA = row[2]?.toString().trim().toLowerCase() === "sim";
-                        const caixa = row[3]?.toString().trim() || "N/A";
-                        const tipo = row[4]?.toString().trim() || "N/A";
+                    for (let i = start; i < end; i++) {
+                        if (i === 0) continue;
                         
-                        dados.push([incidente, nome, dentroSLA, caixa, tipo]);
+                        const row = rawData[i];
+                        if (row.length >= 5) {
+                            const incidente = row[0]?.toString().trim() || "N/A";
+                            const nome = row[1]?.toString().trim().toUpperCase() || "N/A";
+                            const dentroSLA = row[2]?.toString().trim().toLowerCase() === "sim";
+                            const caixa = row[3]?.toString().trim() || "N/A";
+                            const tipo = row[4]?.toString().trim() || "N/A";
+                            
+                            dados.push([incidente, nome, dentroSLA, caixa, tipo]);
+                        }
+                        processedRows++;
+                        document.getElementById("progress").value = (processedRows / totalRows) * 100;
                     }
-                    processedRows++;
-                    document.getElementById("progress").value = (processedRows / totalRows) * 100;
+                    
+                    if (end < rawData.length) {
+                        setTimeout(() => processBatch(end), 0);
+                    } else {
+                        localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                        hideSpinner();
+                        alert(`Planilha carregada com sucesso! ${dados.length} incidentes processados.`);
+                        updateTeamStats();
+                    }
                 }
                 
-                if (end < rawData.length) {
-                    setTimeout(() => processBatch(end), 0);
-                } else {
-                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                    hideSpinner();
-                    
-                    // Exibir estatísticas reais após processamento
-                    const totalIncidents = dados.length;
-                    alert(`Planilha carregada com sucesso! ${totalIncidents} incidentes processados.`);
-                    
-                    updateTeamStats();
-                }
+                processBatch(1);
             }
-            
-            processBatch(1);
-        }
 
-        function updateTeamStats() {
-            const mediaEquipeDiv = document.getElementById("mediaEquipe");
-            
-            if (!dados || dados.length === 0) {
-                mediaEquipeDiv.innerHTML = "";
-                return;
+            function showSpinner() {
+                const spinner = document.getElementById("spinner");
+                if (spinner) spinner.style.display = "block";
+                const progress = document.getElementById("progress");
+                if (progress) progress.value = 0;
             }
-            
-            // Calcular estatísticas reais
-            const totalIncidents = dados.length;
-            const dentroSLA = dados.filter(row => row[2]).length;
-            const foraSLA = totalIncidents - dentroSLA;
-            const percentualSLA = (dentroSLA / totalIncidents * 100).toFixed(2);
-            
-            // Calcular número de analistas únicos e média
-            const analistas = new Set(dados.map(row => row[1]));
-            const numAnalistas = analistas.size;
-            const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
-            
-            mediaEquipeDiv.innerHTML = `
-                <div class="result-card">
-                    <h3>Estatísticas Gerais da Equipe</h3>
-                    <div class="stats-container">
-                        <div class="stat-card">
-                            <div>Total de Incidentes</div>
-                            <div class="stat-value">${totalIncidents}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Dentro do SLA</div>
-                            <div class="stat-value">${dentroSLA}</div>
-                            <div>${percentualSLA}%</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Fora do SLA</div>
-                            <div class="stat-value">${foraSLA}</div>
-                        </div>
-                        <div class="stat-card">
-                            <div>Analistas</div>
-                            <div class="stat-value">${numAnalistas}</div>
-                            <div>Média: ${mediaPorAnalista}</div>
+
+            function hideSpinner() {
+                const spinner = document.getElementById("spinner");
+                if (spinner) spinner.style.display = "none";
+            }
+
+            function updateTeamStats() {
+                const mediaEquipeDiv = document.getElementById("mediaEquipe");
+                if (!mediaEquipeDiv) return;
+                
+                if (!dados || dados.length === 0) {
+                    mediaEquipeDiv.innerHTML = "";
+                    return;
+                }
+                
+                const totalIncidents = dados.length;
+                const dentroSLA = dados.filter(row => row[2]).length;
+                const foraSLA = totalIncidents - dentroSLA;
+                const percentualSLA = (dentroSLA / totalIncidents * 100).toFixed(2);
+                
+                const analistas = new Set(dados.map(row => row[1]));
+                const numAnalistas = analistas.size;
+                const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
+                
+                mediaEquipeDiv.innerHTML = `
+                    <div class="result-card">
+                        <h3>Estatísticas Gerais da Equipe</h3>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div>Total de Incidentes</div>
+                                <div class="stat-value">${totalIncidents}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Dentro do SLA</div>
+                                <div class="stat-value">${dentroSLA}</div>
+                                <div>${percentualSLA}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Fora do SLA</div>
+                                <div class="stat-value">${foraSLA}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Analistas</div>
+                                <div class="stat-value">${numAnalistas}</div>
+                                <div>Média: ${mediaPorAnalista}</div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            `;
-        }
-
-        // (Manter as outras funções como showSpinner, hideSpinner, consultarETIT, etc.)
-        
-        function limparDados() {
-            dados = [];
-            localStorage.removeItem("dadosPlanilha");
-            document.getElementById('matricula').value = "";
-            document.getElementById('resultado').innerHTML = "";
-            document.getElementById('mediaEquipe').innerHTML = "";
-            document.getElementById('tabelaDentro').getElementsByTagName('tbody')[0].innerHTML = "";
-            document.getElementById('tabelaFora').getElementsByTagName('tbody')[0].innerHTML = "";
-            document.getElementById('upload').value = "";
-            
-            if (performanceChart) {
-                performanceChart.destroy();
-                performanceChart = null;
+                `;
             }
-        }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            // Não carregar dados automaticamente ao iniciar
-            limparDados();
+            function consultarETIT() {
+                if (!dados || dados.length === 0) {
+                    const storedData = localStorage.getItem("dadosPlanilha");
+                    if (storedData) {
+                        try {
+                            dados = JSON.parse(storedData);
+                            if (!Array.isArray(dados) || dados.length === 0) {
+                                alert("Dados carregados são inválidos. Por favor, carregue uma planilha novamente.");
+                                return;
+                            }
+                        } catch (e) {
+                            alert("Erro ao carregar dados salvos. Por favor, carregue uma planilha novamente.");
+                            return;
+                        }
+                    } else {
+                        alert("Por favor, carregue uma planilha primeiro.");
+                        return;
+                    }
+                }
+
+                const input = document.getElementById('matricula')?.value.trim().toUpperCase();
+                if (!input) {
+                    alert("Por favor, digite uma matrícula ou nome para consultar.");
+                    return;
+                }
+
+                let nomeAnalista, matricula;
+                if (matriculaToNome[input]) {
+                    matricula = input;
+                    nomeAnalista = matriculaToNome[input];
+                } else if (nomeToMatricula[input]) {
+                    matricula = nomeToMatricula[input];
+                    nomeAnalista = input;
+                } else {
+                    const matchingNames = Object.values(matriculaToNome).filter(name => 
+                        name.toUpperCase().includes(input)
+                    );
+                    
+                    if (matchingNames.length === 1) {
+                        nomeAnalista = matchingNames[0];
+                        matricula = Object.entries(matriculaToNome).find(
+                            ([m, n]) => n === nomeAnalista
+                        )[0];
+                    } else if (matchingNames.length > 1) {
+                        alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}. Por favor, seja mais específico.`);
+                        return;
+                    } else {
+                        alert("Matrícula ou nome não encontrado. Verifique e tente novamente.");
+                        return;
+                    }
+                }
+
+                showSpinner();
+                
+                setTimeout(() => {
+                    try {
+                        const result = processAnalystData(nomeAnalista);
+                        displayResults(nomeAnalista, matricula, result);
+                        hideSpinner();
+                    } catch (error) {
+                        hideSpinner();
+                        alert("Ocorreu um erro ao processar os dados: " + error.message);
+                        console.error(error);
+                    }
+                }, 100);
+            }
+
+            function processAnalystData(nomeAnalista) {
+                const dentro = [];
+                const fora = [];
+                let totalDentroSLA = 0;
+                let totalTratado = 0;
+
+                for (const row of dados) {
+                    const nomeAnalistaPlanilha = row[1];
+                    
+                    if (nomeAnalistaPlanilha === nomeAnalista) {
+                        const incidente = row[0];
+                        const dentroSLA = row[2];
+                        const caixa = row[3];
+                        const tipo = row[4];
+                        
+                        if (dentroSLA) {
+                            dentro.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
+                            totalDentroSLA++;
+                        } else {
+                            fora.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
+                        }
+                        totalTratado++;
+                    }
+                }
+
+                const mediaEquipe = calcularMediaEquipe();
+                const slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
+                
+                return {
+                    dentro,
+                    fora,
+                    totalDentroSLA,
+                    totalTratado,
+                    mediaEquipe,
+                    slaPercentual
+                };
+            }
+
+            function displayResults(nomeAnalista, matricula, result) {
+                const resultadoDiv = document.getElementById("resultado");
+                if (!resultadoDiv) return;
+                
+                const { dentro, fora, totalDentroSLA, totalTratado, mediaEquipe, slaPercentual } = result;
+                
+                const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
+                const slaMeta = slaPercentual >= 80 ? "meta-atingida" : "meta-nao-atingida";
+                
+                resultadoDiv.innerHTML = `
+                    <div class="result-card">
+                        <h3>Resultado para: ${nomeAnalista} (${matricula})</h3>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div>Dentro do SLA</div>
+                                <div class="stat-value">${dentro.length}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Fora do SLA</div>
+                                <div class="stat-value">${fora.length}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Total Tratado</div>
+                                <div class="stat-value">${totalTratado}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Percentual SLA</div>
+                                <div class="stat-value ${slaMeta}">${slaPercentual}%</div>
+                                <div>Meta: 80%</div>
+                            </div>
+                        </div>
+                        <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
+                        <p><strong>Comparação com a Média:</strong> 
+                            <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span>
+                        </p>
+                    </div>
+                `;
+                
+                atualizarTabela("tabelaDentro", dentro, "dentro");
+                atualizarTabela("tabelaFora", fora, "fora");
+                updateChart(nomeAnalista, totalDentroSLA, fora.length, mediaEquipe);
+            }
+
+            function calcularMediaEquipe() {
+                if (!dados || dados.length === 0) return 0;
+                
+                const analystCounts = {};
+                let totalIncidents = 0;
+                
+                for (const row of dados) {
+                    const nome = row[1];
+                    if (!analystCounts[nome]) {
+                        analystCounts[nome] = 0;
+                    }
+                    analystCounts[nome]++;
+                    totalIncidents++;
+                }
+                
+                const numAnalysts = Object.keys(analystCounts).length;
+                return numAnalysts > 0 ? (totalIncidents / numAnalysts).toFixed(2) : 0;
+            }
+
+            function atualizarTabela(idTabela, tableData, rowClass) {
+                const tabela = document.getElementById(idTabela)?.getElementsByTagName("tbody")[0];
+                if (!tabela) return;
+                
+                tabela.innerHTML = "";
+                
+                if (tableData.length === 0) {
+                    const row = tabela.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.colSpan = 4;
+                    cell.textContent = "Nenhum incidente encontrado";
+                    cell.style.textAlign = "center";
+                    return;
+                }
+                
+                for (const item of tableData) {
+                    const row = tabela.insertRow();
+                    row.className = rowClass;
+                    
+                    for (let i = 0; i < 4; i++) {
+                        const cell = row.insertCell(i);
+                        cell.textContent = item[i] || "N/A";
+                    }
+                }
+            }
+
+            function updateChart(nomeAnalista, dentro, fora, mediaEquipe) {
+                const canvas = document.getElementById('performanceChart');
+                if (!canvas) return;
+                
+                const ctx = canvas.getContext('2d');
+                
+                if (performanceChart) {
+                    performanceChart.destroy();
+                }
+                
+                performanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Dentro SLA', 'Fora SLA', 'Média Equipe'],
+                        datasets: [{
+                            label: nomeAnalista,
+                            data: [dentro, fora, mediaEquipe],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(255, 99, 132, 0.7)',
+                                'rgba(54, 162, 235, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                title: {
+                                    display: true,
+                                    text: 'Quantidade de Incidentes'
+                                }
+                            }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Desempenho do Analista',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
+                        }
+                    }
+                });
+            }
+
+            function limparDados() {
+                dados = [];
+                localStorage.removeItem("dadosPlanilha");
+                
+                const matriculaInput = document.getElementById('matricula');
+                if (matriculaInput) matriculaInput.value = "";
+                
+                const resultadoDiv = document.getElementById('resultado');
+                if (resultadoDiv) resultadoDiv.innerHTML = "";
+                
+                const mediaEquipeDiv = document.getElementById('mediaEquipe');
+                if (mediaEquipeDiv) mediaEquipeDiv.innerHTML = "";
+                
+                const tabelaDentro = document.getElementById('tabelaDentro')?.getElementsByTagName('tbody')[0];
+                if (tabelaDentro) tabelaDentro.innerHTML = "";
+                
+                const tabelaFora = document.getElementById('tabelaFora')?.getElementsByTagName('tbody')[0];
+                if (tabelaFora) tabelaFora.innerHTML = "";
+                
+                const uploadInput = document.getElementById('upload');
+                if (uploadInput) uploadInput.value = "";
+                
+                if (performanceChart) {
+                    performanceChart.destroy();
+                    performanceChart = null;
+                }
+            }
         });
     </script>
 </body>
