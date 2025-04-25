@@ -5,42 +5,182 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel ETIT Móvel</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #f2f2f2; text-align: center; }
-        .container { max-width: 800px; margin: 50px auto; padding: 20px; background: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
-        input, button { padding: 10px; margin: 10px; }
-        .table-container { max-height: 300px; overflow-y: auto; margin-top: 20px; border: 1px solid #ddd; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px; border: 1px solid #ddd; }
-        th { background-color: #D52B1E; color: white; }
-        .dentro { background-color: #4CAF50; color: white; }
-        .fora { background-color: #FF4D4D; color: white; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background-color: #f2f2f2; 
+            margin: 0;
+            padding: 0;
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 20px auto; 
+            padding: 20px; 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+        }
+        .input-group { 
+            display: flex; 
+            flex-wrap: wrap; 
+            justify-content: center; 
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input, button { 
+            padding: 10px; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            background-color: #D52B1E;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #B02218;
+        }
+        .table-container { 
+            max-height: 300px; 
+            overflow-y: auto; 
+            margin: 20px 0; 
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        table { 
+            width: 100%; 
+            border-collapse: collapse; 
+        }
+        th, td { 
+            padding: 10px; 
+            border: 1px solid #ddd; 
+            text-align: left;
+        }
+        th { 
+            background-color: #D52B1E; 
+            color: white; 
+            position: sticky;
+            top: 0;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .dentro { background-color: rgba(76, 175, 80, 0.1); }
+        .fora { background-color: rgba(255, 77, 77, 0.1); }
         .meta-atingida { color: green; font-weight: bold; }
         .meta-nao-atingida { color: red; font-weight: bold; }
         .acima-media { color: blue; font-weight: bold; }
         .abaixo-media { color: orange; font-weight: bold; }
-        .spinner { display: none; font-size: 18px; }
+        .spinner { 
+            display: none; 
+            font-size: 18px; 
+            text-align: center;
+            padding: 20px;
+        }
+        .result-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .chart-container {
+            margin: 30px 0;
+            height: 300px;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                padding: 10px;
+            }
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h2>Painel ETIT Móvel</h2>
-        <input type="file" id="upload" accept=".xlsx">
-        <input type="text" id="matricula" placeholder="Digite a matrícula" oninput="consultarETIT()">
+        
+        <div class="input-group">
+            <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
+            <input type="text" id="matricula" placeholder="Digite a matrícula" aria-label="Digite a matrícula">
+            <button onclick="consultarETIT()">Consultar</button>
+            <button onclick="limparDados()">Limpar</button>
+        </div>
+        
+        <div class="spinner" id="spinner">
+            <div>⏳ Processando dados, por favor aguarde...</div>
+            <progress id="progress" max="100" value="0" style="width:100%"></progress>
+        </div>
+        
         <div id="resultado"></div>
         <div id="mediaEquipe"></div>
-        <div class="spinner" id="spinner">⏳ Carregando...</div>
-        <h3>Incidentes Dentro</h3>
-        <div class="table-container">
-            <table id="tabelaDentro"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
+        
+        <div class="chart-container">
+            <canvas id="performanceChart"></canvas>
         </div>
-        <h3>Incidentes Fora</h3>
+        
+        <div class="stats-container" id="statsContainer"></div>
+        
         <div class="table-container">
-            <table id="tabelaFora"><thead><tr><th>Incidente</th><th>Caixa</th><th>Tipo</th></tr></thead><tbody></tbody></table>
+            <h3>Incidentes Dentro do SLA</h3>
+            <table id="tabelaDentro">
+                <thead>
+                    <tr>
+                        <th>Incidente</th>
+                        <th>Caixa</th>
+                        <th>Tipo</th>
+                        <th>Analista</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+        
+        <div class="table-container">
+            <h3>Incidentes Fora do SLA</h3>
+            <table id="tabelaFora">
+                <thead>
+                    <tr>
+                        <th>Incidente</th>
+                        <th>Caixa</th>
+                        <th>Tipo</th>
+                        <th>Analista</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
         </div>
     </div>
+
     <script>
         let dados = [];
+        let performanceChart = null;
         const matriculaToNome = {
             "N6104793": "BRUNO MARIANO VILACA",
             "N5931955": "THIAGO DE SOUZA INACIO",
@@ -50,52 +190,150 @@
             "F204763": "RODRIGO REIS DUARTE"
         };
 
+        // Mapeamento reverso para busca por nome
+        const nomeToMatricula = {};
+        for (const [matricula, nome] of Object.entries(matriculaToNome)) {
+            nomeToMatricula[nome.toUpperCase()] = matricula;
+        }
+
         document.getElementById('upload').addEventListener('change', function(event) {
             const file = event.target.files[0];
             if (!file) return;
 
-            document.getElementById("spinner").style.display = "block";
-
+            showSpinner();
+            
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
                     const workbook = XLSX.read(data, { type: 'array' });
-                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-                    dados = XLSX.utils.sheet_to_json(sheet, { header: 1 });
-
-                    document.getElementById("spinner").style.display = "none";
-                    if (dados.length === 0 || dados[0].length < 5) {
-                        alert("Erro: A planilha está vazia ou com formato inválido!");
-                        dados = [];
-                    } else {
-                        localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                        alert("Planilha carregada com sucesso!");
+                    
+                    // Verifica se há pelo menos uma planilha
+                    if (workbook.SheetNames.length === 0) {
+                        throw new Error("O arquivo Excel não contém planilhas.");
                     }
+                    
+                    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+                    const rawData = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+                    
+                    // Validação básica da estrutura
+                    if (rawData.length < 2 || rawData[0].length < 5) {
+                        throw new Error("Formato de planilha inválido. Certifique-se de que contém pelo menos 5 colunas.");
+                    }
+                    
+                    // Processamento em lotes para melhor performance
+                    processDataInBatches(rawData, 1000);
+                    
                 } catch (error) {
-                    alert("Erro ao carregar a planilha!");
+                    hideSpinner();
+                    alert(`Erro ao processar o arquivo: ${error.message}`);
+                    console.error(error);
+                    dados = [];
                 }
             };
+            
+            reader.onerror = function() {
+                hideSpinner();
+                alert("Erro ao ler o arquivo. Por favor, tente novamente.");
+                dados = [];
+            };
+            
             reader.readAsArrayBuffer(file);
         });
 
-        function calcularMediaEquipe() {
-            let totais = {};
-            let totalGeral = 0;
-            let totalAnalistas = 0;
-
-            dados.forEach(row => {
-                if (row.length < 5) return;
-                let nome = row[1]?.toString().trim().toUpperCase();
-                if (!totais[nome]) {
-                    totais[nome] = 0;
-                    totalAnalistas++;
+        function processDataInBatches(rawData, batchSize) {
+            dados = [];
+            const header = rawData[0];
+            const totalRows = rawData.length - 1; // Excluindo cabeçalho
+            let processedRows = 0;
+            
+            function processBatch(start) {
+                const end = Math.min(start + batchSize, rawData.length);
+                
+                for (let i = start; i < end; i++) {
+                    if (i === 0) continue; // Pular cabeçalho
+                    
+                    const row = rawData[i];
+                    // Validar linha mínima
+                    if (row.length >= 5) {
+                        // Padronizar dados
+                        const processedRow = [
+                            row[0]?.toString().trim() || "N/A",     // Incidente
+                            row[1]?.toString().trim().toUpperCase() || "N/A", // Nome
+                            (row[2]?.toString().trim().toLowerCase() === "sim"), // Dentro do SLA (boolean)
+                            row[3]?.toString().trim() || "N/A",     // Caixa
+                            row[4]?.toString().trim() || "N/A"      // Tipo
+                        ];
+                        dados.push(processedRow);
+                    }
+                    processedRows++;
+                    
+                    // Atualizar progresso
+                    document.getElementById("progress").value = (processedRows / totalRows) * 100;
                 }
-                totais[nome]++;
-                totalGeral++;
-            });
+                
+                if (end < rawData.length) {
+                    // Processar próximo lote assincronamente para não bloquear a UI
+                    setTimeout(() => processBatch(end), 0);
+                } else {
+                    // Finalizado
+                    localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                    hideSpinner();
+                    alert(`Planilha carregada com sucesso! ${dados.length} registros processados.`);
+                    
+                    // Atualizar estatísticas gerais
+                    updateTeamStats();
+                }
+            }
+            
+            // Iniciar processamento
+            processBatch(1);
+        }
 
-            return totalAnalistas > 0 ? (totalGeral / totalAnalistas).toFixed(2) : 0;
+        function showSpinner() {
+            document.getElementById("spinner").style.display = "block";
+            document.getElementById("progress").value = 0;
+        }
+
+        function hideSpinner() {
+            document.getElementById("spinner").style.display = "none";
+        }
+
+        function updateTeamStats() {
+            if (dados.length === 0) return;
+            
+            const stats = {
+                totalIncidents: dados.length,
+                dentroSLA: dados.filter(row => row[2]).length,
+                foraSLA: dados.filter(row => !row[2]).length,
+                analysts: new Set(dados.map(row => row[1])).size
+            };
+            
+            stats.percentualSLA = (stats.dentroSLA / stats.totalIncidents * 100).toFixed(2);
+            stats.mediaPorAnalista = (stats.totalIncidents / stats.analysts).toFixed(2);
+            
+            document.getElementById("mediaEquipe").innerHTML = `
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div>Total de Incidentes</div>
+                        <div class="stat-value">${stats.totalIncidents}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Dentro do SLA</div>
+                        <div class="stat-value">${stats.dentroSLA}</div>
+                        <div>${stats.percentualSLA}%</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Fora do SLA</div>
+                        <div class="stat-value">${stats.foraSLA}</div>
+                    </div>
+                    <div class="stat-card">
+                        <div>Analistas</div>
+                        <div class="stat-value">${stats.analysts}</div>
+                        <div>Média: ${stats.mediaPorAnalista}</div>
+                    </div>
+                </div>
+            `;
         }
 
         function consultarETIT() {
@@ -104,66 +342,259 @@
                 if (storedData) {
                     dados = JSON.parse(storedData);
                 } else {
+                    alert("Por favor, carregue uma planilha primeiro.");
                     return;
                 }
             }
 
-            const matricula = document.getElementById('matricula').value.trim().toUpperCase();
-            if (!matricula) return;
+            const input = document.getElementById('matricula').value.trim().toUpperCase();
+            if (!input) {
+                alert("Por favor, digite uma matrícula ou nome para consultar.");
+                return;
+            }
 
-            const nomeAnalista = matriculaToNome[matricula] || "Nome não encontrado";
-            let dentro = [];
-            let fora = [];
+            // Verifica se é matrícula ou nome
+            let nomeAnalista, matricula;
+            if (matriculaToNome[input]) {
+                matricula = input;
+                nomeAnalista = matriculaToNome[input];
+            } else if (nomeToMatricula[input]) {
+                matricula = nomeToMatricula[input];
+                nomeAnalista = input;
+            } else {
+                // Tentar encontrar correspondência parcial no nome
+                const matchingNames = Object.values(matriculaToNome).filter(name => 
+                    name.toUpperCase().includes(input)
+                );
+                
+                if (matchingNames.length === 1) {
+                    nomeAnalista = matchingNames[0];
+                    matricula = Object.entries(matriculaToNome).find(
+                        ([m, n]) => n === nomeAnalista
+                    )[0];
+                } else if (matchingNames.length > 1) {
+                    alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}. Por favor, seja mais específico.`);
+                    return;
+                } else {
+                    alert("Matrícula ou nome não encontrado. Verifique e tente novamente.");
+                    return;
+                }
+            }
+
+            showSpinner();
+            
+            // Processamento assíncrono para não bloquear a UI
+            setTimeout(() => {
+                try {
+                    const result = processAnalystData(nomeAnalista);
+                    displayResults(nomeAnalista, matricula, result);
+                    hideSpinner();
+                } catch (error) {
+                    hideSpinner();
+                    alert("Ocorreu um erro ao processar os dados: " + error.message);
+                    console.error(error);
+                }
+            }, 100);
+        }
+
+        function processAnalystData(nomeAnalista) {
+            const dentro = [];
+            const fora = [];
             let totalDentroSLA = 0;
             let totalTratado = 0;
 
-            dados.forEach(row => {
-                if (row.length < 5) return;
-                let incidente = row[0];
-                let nomeAnalistaPlanilha = row[1]?.toString().trim().toUpperCase();
-                let valido = row[2]?.toString().trim().toLowerCase();
-                let caixa = row[3] || "N/A";
-                let tipo = row[4] || "N/A";
+            for (const row of dados) {
+                const nomeAnalistaPlanilha = row[1];
                 
                 if (nomeAnalistaPlanilha === nomeAnalista) {
-                    if (valido === "sim") {
-                        dentro.push([incidente, caixa, tipo]);
-                        totalDentroSLA++; // Contabiliza o incidente dentro do SLA
-                    } else if (valido === "não") {
-                        fora.push([incidente, caixa, tipo]);
+                    const incidente = row[0];
+                    const dentroSLA = row[2];
+                    const caixa = row[3];
+                    const tipo = row[4];
+                    
+                    if (dentroSLA) {
+                        dentro.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
+                        totalDentroSLA++;
+                    } else {
+                        fora.push([incidente, caixa, tipo, nomeAnalistaPlanilha]);
                     }
                     totalTratado++;
                 }
-            });
+            }
 
-            let mediaEquipe = calcularMediaEquipe();
-            let comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
-            let slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
-            let slaMeta = slaPercentual >= 80 ? "Dentro da meta" : "Fora da meta";
+            const mediaEquipe = calcularMediaEquipe();
+            const slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
+            
+            return {
+                dentro,
+                fora,
+                totalDentroSLA,
+                totalTratado,
+                mediaEquipe,
+                slaPercentual
+            };
+        }
 
-            document.getElementById("resultado").innerHTML =
-                `<p><strong>Nome do Analista:</strong> ${nomeAnalista}</p>
-                <p><strong>Dentro:</strong> ${dentro.length} | <strong>Fora:</strong> ${fora.length} | <strong>Total Tratado:</strong> ${totalTratado}</p>
-                <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
-                <p><strong>Comparação com a Média:</strong> <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span></p>
-                <p><strong>Percentual SLA:</strong> ${slaPercentual}%</p>
-                <p><strong>Status SLA (80%):</strong> ${slaMeta}</p>`;
-
+        function displayResults(nomeAnalista, matricula, result) {
+            const { dentro, fora, totalDentroSLA, totalTratado, mediaEquipe, slaPercentual } = result;
+            
+            const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
+            const slaMeta = slaPercentual >= 80 ? "meta-atingida" : "meta-nao-atingida";
+            
+            document.getElementById("resultado").innerHTML = `
+                <div class="result-card">
+                    <h3>Resultado para: ${nomeAnalista} (${matricula})</h3>
+                    <div class="stats-container">
+                        <div class="stat-card">
+                            <div>Dentro do SLA</div>
+                            <div class="stat-value">${dentro.length}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Fora do SLA</div>
+                            <div class="stat-value">${fora.length}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Total Tratado</div>
+                            <div class="stat-value">${totalTratado}</div>
+                        </div>
+                        <div class="stat-card">
+                            <div>Percentual SLA</div>
+                            <div class="stat-value ${slaMeta}">${slaPercentual}%</div>
+                            <div>Meta: 80%</div>
+                        </div>
+                    </div>
+                    <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
+                    <p><strong>Comparação com a Média:</strong> 
+                        <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span>
+                    </p>
+                </div>
+            `;
+            
             atualizarTabela("tabelaDentro", dentro, "dentro");
             atualizarTabela("tabelaFora", fora, "fora");
+            
+            // Atualizar gráfico
+            updateChart(nomeAnalista, totalDentroSLA, fora.length, mediaEquipe);
+        }
+
+        function calcularMediaEquipe() {
+            const analystCounts = {};
+            let totalIncidents = 0;
+            
+            for (const row of dados) {
+                const nome = row[1];
+                if (!analystCounts[nome]) {
+                    analystCounts[nome] = 0;
+                }
+                analystCounts[nome]++;
+                totalIncidents++;
+            }
+            
+            const numAnalysts = Object.keys(analystCounts).length;
+            return numAnalysts > 0 ? (totalIncidents / numAnalysts).toFixed(2) : 0;
         }
 
         function atualizarTabela(idTabela, dados, classe) {
             const tabela = document.getElementById(idTabela).getElementsByTagName("tbody")[0];
             tabela.innerHTML = "";
-            dados.forEach(item => {
-                let row = tabela.insertRow();
-                row.insertCell(0).innerText = item[0]; // Incidente
-                row.insertCell(1).innerText = item[1]; // Caixa
-                row.insertCell(2).innerText = item[2]; // Tipo
+            
+            if (dados.length === 0) {
+                const row = tabela.insertRow();
+                const cell = row.insertCell(0);
+                cell.colSpan = 4;
+                cell.textContent = "Nenhum incidente encontrado";
+                cell.style.textAlign = "center";
+                return;
+            }
+            
+            for (const item of dados) {
+                const row = tabela.insertRow();
                 row.className = classe;
+                
+                for (let i = 0; i < 4; i++) {
+                    const cell = row.insertCell(i);
+                    cell.textContent = item[i] || "N/A";
+                }
+            }
+        }
+
+        function updateChart(nomeAnalista, dentro, fora, mediaEquipe) {
+            const ctx = document.getElementById('performanceChart').getContext('2d');
+            
+            // Destruir gráfico anterior se existir
+            if (performanceChart) {
+                performanceChart.destroy();
+            }
+            
+            performanceChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Dentro SLA', 'Fora SLA', 'Média Equipe'],
+                    datasets: [{
+                        label: nomeAnalista,
+                        data: [dentro, fora, mediaEquipe],
+                        backgroundColor: [
+                            'rgba(75, 192, 192, 0.7)',
+                            'rgba(255, 99, 132, 0.7)',
+                            'rgba(54, 162, 235, 0.7)'
+                        ],
+                        borderColor: [
+                            'rgba(75, 192, 192, 1)',
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)'
+                        ],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Quantidade de Incidentes'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Desempenho do Analista',
+                            font: {
+                                size: 16
+                            }
+                        },
+                        legend: {
+                            display: false
+                        }
+                    }
+                }
             });
         }
+
+        function limparDados() {
+            document.getElementById('matricula').value = "";
+            document.getElementById('resultado').innerHTML = "";
+            document.getElementById('mediaEquipe').innerHTML = "";
+            document.getElementById('tabelaDentro').getElementsByTagName('tbody')[0].innerHTML = "";
+            document.getElementById('tabelaFora').getElementsByTagName('tbody')[0].innerHTML = "";
+            
+            if (performanceChart) {
+                performanceChart.destroy();
+                performanceChart = null;
+            }
+        }
+
+        // Carregar dados salvos ao iniciar
+        window.addEventListener('DOMContentLoaded', () => {
+            const storedData = localStorage.getItem("dadosPlanilha");
+            if (storedData) {
+                dados = JSON.parse(storedData);
+                updateTeamStats();
+            }
+        });
     </script>
 </body>
 </html>
