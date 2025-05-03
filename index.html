@@ -7,7 +7,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* Estilos mantidos iguais */
         body { 
             font-family: Arial, sans-serif; 
             background-color: #f2f2f2; 
@@ -129,7 +128,7 @@
         
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
-            <input type="text" id="analista" placeholder="Digite o nome, login ou matrícula" aria-label="Digite o nome do analista">
+            <input type="text" id="matricula" placeholder="Digite a matrícula" aria-label="Digite a matrícula">
             <button id="consultarBtn">Consultar</button>
             <button id="limparBtn">Limpar</button>
         </div>
@@ -147,8 +146,8 @@
         </div>
         
         <div class="table-container">
-            <h3>Incidentes Válidos</h3>
-            <table id="tabelaValidos">
+            <h3>Incidentes Dentro do SLA</h3>
+            <table id="tabelaDentro">
                 <thead>
                     <tr>
                         <th>Incidente</th>
@@ -162,8 +161,8 @@
         </div>
         
         <div class="table-container">
-            <h3>Incidentes Inválidos</h3>
-            <table id="tabelaInvalidos">
+            <h3>Incidentes Fora do SLA</h3>
+            <table id="tabelaFora">
                 <thead>
                     <tr>
                         <th>Incidente</th>
@@ -181,19 +180,25 @@
         document.addEventListener('DOMContentLoaded', function() {
             let dados = [];
             let performanceChart = null;
-            let spinnerVisible = false;
-            
+            const matriculaToNome = {
+                "N6104793": "BRUNO MARIANO VILACA",
+                "N5931955": "THIAGO DE SOUZA INACIO",
+                "N6173067": "JULIANA RIBEIRO GALHÃO",
+                "N6071740": "THIAGO BARBOZA DOS SANTOS",
+                "N6172207": "CHARLES DOS SANTOS PAIVA",
+                "F204763": "RODRIGO REIS DUARTE"
+            };
+
             // Elementos do DOM
             const uploadInput = document.getElementById('upload');
             const consultarBtn = document.getElementById('consultarBtn');
             const limparBtn = document.getElementById('limparBtn');
             const mediaEquipeDiv = document.getElementById('mediaEquipe');
             const resultadoDiv = document.getElementById('resultado');
-            const spinner = document.getElementById('spinner');
 
             // Event Listeners
             uploadInput.addEventListener('change', handleFileUpload);
-            consultarBtn.addEventListener('click', consultarAnalista);
+            consultarBtn.addEventListener('click', consultarETIT);
             limparBtn.addEventListener('click', limparDados);
 
             function handleFileUpload(event) {
@@ -222,15 +227,14 @@
                         processDataInBatches(rawData, 1000);
                         
                     } catch (error) {
-                        console.error("Erro ao processar arquivo:", error);
                         hideSpinner();
                         alert(`Erro ao processar o arquivo: ${error.message}`);
+                        console.error(error);
                         limparDados();
                     }
                 };
                 
                 reader.onerror = function() {
-                    console.error("Erro ao ler arquivo");
                     hideSpinner();
                     alert("Erro ao ler o arquivo. Por favor, tente novamente.");
                     limparDados();
@@ -240,59 +244,39 @@
             }
 
             function processDataInBatches(rawData, batchSize) {
-                try {
-                    // Resetar completamente os dados
-                    dados = [];
-                    const totalRows = rawData.length - 1; // Excluindo cabeçalho
-                    let processedRows = 0;
+                // Resetar completamente os dados
+                dados = [];
+                const totalRows = rawData.length - 1; // Excluindo cabeçalho
+                let processedRows = 0;
+                
+                function processBatch(start) {
+                    const end = Math.min(start + batchSize, rawData.length);
                     
-                    function processBatch(start) {
-                        try {
-                            const end = Math.min(start + batchSize, rawData.length);
-                            
-                            for (let i = start; i < end; i++) {
-                                if (i === 0) continue; // Pular cabeçalho
-                                
-                                const row = rawData[i];
-                                if (row && row.length >= 5) {
-                                    // Extrair login do analista
-                                    const analistaCompleto = row[1]?.toString().trim() || "N/A";
-                                    const partesNome = analistaCompleto.split(' ');
-                                    const login = partesNome.length > 0 ? partesNome[0] : "N/A";
-                                    const nomeCompleto = partesNome.slice(1).join(' ');
-                                    
-                                    dados.push({
-                                        incidente: row[0]?.toString().trim() || "N/A",
-                                        analistaCompleto: analistaCompleto,
-                                        login: login,
-                                        nomeCompleto: nomeCompleto,
-                                        valido: row[2]?.toString().trim().toLowerCase() === "sim",
-                                        caixa: row[3]?.toString().trim() || "N/A",
-                                        tipo: row[4]?.toString().trim() || "N/A"
-                                    });
-                                }
-                                processedRows++;
-                                updateProgress(processedRows, totalRows);
-                            }
-                            
-                            if (end < rawData.length) {
-                                setTimeout(() => processBatch(end), 0);
-                            } else {
-                                finalizeProcessing();
-                            }
-                        } catch (error) {
-                            console.error("Erro no processBatch:", error);
-                            hideSpinner();
-                            throw error;
+                    for (let i = start; i < end; i++) {
+                        if (i === 0) continue; // Pular cabeçalho
+                        
+                        const row = rawData[i];
+                        if (row && row.length >= 5) {
+                            dados.push([
+                                row[0]?.toString().trim() || "N/A",     // Incidente
+                                row[1]?.toString().trim().toUpperCase() || "N/A", // Nome
+                                row[2]?.toString().trim().toLowerCase() === "sim", // Dentro SLA
+                                row[3]?.toString().trim() || "N/A",     // Caixa
+                                row[4]?.toString().trim() || "N/A"      // Tipo
+                            ]);
                         }
+                        processedRows++;
+                        updateProgress(processedRows, totalRows);
                     }
                     
-                    processBatch(1);
-                } catch (error) {
-                    console.error("Erro no processDataInBatches:", error);
-                    hideSpinner();
-                    alert("Erro ao processar os dados. Por favor, verifique o arquivo e tente novamente.");
+                    if (end < rawData.length) {
+                        setTimeout(() => processBatch(end), 0);
+                    } else {
+                        finalizeProcessing();
+                    }
                 }
+                
+                processBatch(1);
             }
 
             function updateProgress(processed, total) {
@@ -303,25 +287,14 @@
             }
 
             function finalizeProcessing() {
-                try {
-                    // Removemos o localStorage.setItem para evitar problemas de quota
-                    // localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
-                    
-                    hideSpinner();
-                    
-                    // Exibir estatísticas reais dos dados processados
-                    const totalIncidents = dados.length;
-                    const validos = dados.filter(row => row.valido).length;
-                    const percentualValidos = (validos / totalIncidents * 100).toFixed(2);
-                    
-                    alert(`Planilha carregada com sucesso! ${totalIncidents} incidentes processados (${percentualValidos}% válidos).`);
-                    
-                    updateTeamStats();
-                } catch (error) {
-                    console.error("Erro no finalizeProcessing:", error);
-                    hideSpinner();
-                    alert("Erro ao finalizar o processamento. Por favor, tente novamente.");
-                }
+                localStorage.setItem("dadosPlanilha", JSON.stringify(dados));
+                hideSpinner();
+                
+                // Exibir estatísticas reais dos dados processados
+                const totalIncidents = dados.length;
+                alert(`Planilha carregada com sucesso! ${totalIncidents} incidentes processados.`);
+                
+                updateTeamStats();
             }
 
             function updateTeamStats() {
@@ -332,70 +305,68 @@
                     return;
                 }
                 
-                try {
-                    // Calcular estatísticas reais
-                    const totalIncidents = dados.length;
-                    const validos = dados.filter(row => row.valido).length;
-                    const invalidos = totalIncidents - validos;
-                    const percentualValidos = (validos / totalIncidents * 100).toFixed(2);
-                    
-                    // Analistas únicos
-                    const analistasUnicos = [...new Set(dados.map(row => row.analistaCompleto))];
-                    const numAnalistas = analistasUnicos.length;
-                    const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
-                    
-                    // Tipos de incidentes mais comuns
-                    const tiposCount = {};
-                    dados.forEach(row => {
-                        tiposCount[row.tipo] = (tiposCount[row.tipo] || 0) + 1;
-                    });
-                    const tiposMaisComuns = Object.entries(tiposCount)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 3)
-                        .map(([tipo, count]) => `${tipo} (${count})`)
-                        .join(", ");
-                    
-                    // Exibir os dados calculados
-                    mediaEquipeDiv.innerHTML = `
-                        <div class="result-card">
-                            <h3>Estatísticas Gerais da Equipe</h3>
-                            <div class="stats-container">
-                                <div class="stat-card">
-                                    <div>Total de Incidentes</div>
-                                    <div class="stat-value">${totalIncidents}</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Válidos</div>
-                                    <div class="stat-value">${validos}</div>
-                                    <div>${percentualValidos}%</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Inválidos</div>
-                                    <div class="stat-value">${invalidos}</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Analistas</div>
-                                    <div class="stat-value">${numAnalistas}</div>
-                                    <div>Média: ${mediaPorAnalista}</div>
-                                </div>
+                // Calcular estatísticas reais
+                const totalIncidents = dados.length;
+                const dentroSLA = dados.filter(row => row[2]).length;
+                const foraSLA = totalIncidents - dentroSLA;
+                const percentualSLA = (dentroSLA / totalIncidents * 100).toFixed(2);
+                
+                // Analistas únicos
+                const analistasUnicos = [...new Set(dados.map(row => row[1]))];
+                const numAnalistas = analistasUnicos.length;
+                const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
+                
+                // Exibir apenas os dados calculados
+                mediaEquipeDiv.innerHTML = `
+                    <div class="result-card">
+                        <h3>Estatísticas Gerais da Equipe</h3>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div>Total de Incidentes</div>
+                                <div class="stat-value">${totalIncidents}</div>
                             </div>
-                            <p><strong>Tipos mais comuns:</strong> ${tiposMaisComuns || 'N/A'}</p>
+                            <div class="stat-card">
+                                <div>Dentro do SLA</div>
+                                <div class="stat-value">${dentroSLA}</div>
+                                <div>${percentualSLA}%</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Fora do SLA</div>
+                                <div class="stat-value">${foraSLA}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Analistas</div>
+                                <div class="stat-value">${numAnalistas}</div>
+                                <div>Média: ${mediaPorAnalista}</div>
+                            </div>
                         </div>
-                    `;
-                } catch (error) {
-                    console.error("Erro no updateTeamStats:", error);
-                }
+                    </div>
+                `;
             }
 
-            function consultarAnalista() {
+            function consultarETIT() {
                 if (!dados || dados.length === 0) {
-                    alert("Por favor, carregue uma planilha primeiro.");
-                    return;
+                    const storedData = localStorage.getItem("dadosPlanilha");
+                    if (storedData) {
+                        try {
+                            dados = JSON.parse(storedData);
+                            if (!Array.isArray(dados) || dados.length === 0) {
+                                alert("Por favor, carregue uma planilha válida primeiro.");
+                                return;
+                            }
+                        } catch (e) {
+                            alert("Dados corrompidos. Por favor, carregue a planilha novamente.");
+                            return;
+                        }
+                    } else {
+                        alert("Por favor, carregue uma planilha primeiro.");
+                        return;
+                    }
                 }
 
-                const input = document.getElementById('analista')?.value.trim();
+                const input = document.getElementById('matricula')?.value.trim().toUpperCase();
                 if (!input) {
-                    alert("Por favor, digite o nome, login ou matrícula do analista para consultar.");
+                    alert("Por favor, digite uma matrícula ou nome para consultar.");
                     return;
                 }
 
@@ -408,8 +379,8 @@
                             displayResults(result);
                         }
                     } catch (error) {
-                        console.error("Erro na consulta:", error);
                         alert("Erro ao processar consulta: " + error.message);
+                        console.error(error);
                     } finally {
                         hideSpinner();
                     }
@@ -417,310 +388,259 @@
             }
 
             function processAnalystData(input) {
-                try {
-                    // Normaliza o input removendo espaços extras e colocando em maiúsculas
-                    const normalizedInput = input.trim().toUpperCase();
-                    
-                    // Buscar analistas que correspondam ao input
-                    const analistasUnicos = [...new Set(dados.map(row => ({
-                        login: row.login,
-                        nomeCompleto: row.nomeCompleto,
-                        analistaCompleto: row.analistaCompleto
-                    })))];
-                    
-                    // Filtra os analistas que contêm o texto pesquisado (case insensitive)
-                    const matchingAnalistas = analistasUnicos.filter(analista => {
-                        return (
-                            analista.login.toUpperCase().includes(normalizedInput) ||
-                            analista.nomeCompleto.toUpperCase().includes(normalizedInput) ||
-                            analista.analistaCompleto.toUpperCase().includes(normalizedInput)
-                        );
-                    }).map(a => a.analistaCompleto);
-                    
-                    if (matchingAnalistas.length === 0) {
-                        alert("Nenhum analista encontrado com esse nome/login/matrícula.");
-                        return null;
-                    }
-                    
-                    let nomeAnalista;
-                    
-                    if (matchingAnalistas.length > 1) {
-                        // Mostra lista de analistas encontrados para seleção
-                        const selecionado = prompt(`Múltiplos analistas encontrados:\n${matchingAnalistas.join("\n")}\n\nDigite o nome completo ou matrícula do analista desejado:`);
-                        if (!selecionado) return null;
-                        
-                        // Tenta encontrar o analista selecionado exatamente
-                        const analistaExato = matchingAnalistas.find(a => 
-                            a.toUpperCase().trim() === selecionado.toUpperCase().trim()
-                        );
-                        
-                        if (!analistaExato) {
-                            alert("Analista não encontrado.");
-                            return null;
-                        }
-                        nomeAnalista = analistaExato;
-                    } else {
-                        nomeAnalista = matchingAnalistas[0];
-                    }
-                    
-                    const incidentesAnalista = dados.filter(row => 
-                        row.analistaCompleto.toUpperCase().trim() === nomeAnalista.toUpperCase().trim()
+                let nomeAnalista, matricula;
+                
+                // Verificar se é matrícula
+                if (matriculaToNome[input]) {
+                    matricula = input;
+                    nomeAnalista = matriculaToNome[input];
+                } 
+                // Verificar se é nome completo
+                else if (nomeToMatricula[input]) {
+                    matricula = nomeToMatricula[input];
+                    nomeAnalista = input;
+                }
+                // Busca parcial por nome
+                else {
+                    const matchingNames = Object.values(matriculaToNome).filter(name => 
+                        name.toUpperCase().includes(input)
                     );
                     
-                    const validos = incidentesAnalista.filter(row => row.valido);
-                    const invalidos = incidentesAnalista.filter(row => !row.valido);
-                    
-                    const totalTratado = incidentesAnalista.length;
-                    const percentualValidos = totalTratado > 0 ? ((validos.length / totalTratado) * 100).toFixed(2) : 0;
-                    
-                    // Classificar tipos de incidentes
-                    const tiposCount = {};
-                    incidentesAnalista.forEach(row => {
-                        tiposCount[row.tipo] = (tiposCount[row.tipo] || 0) + 1;
-                    });
-                    const tiposMaisComuns = Object.entries(tiposCount)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 3)
-                        .map(([tipo, count]) => `${tipo} (${count})`)
-                        .join(", ");
-                    
-                    return {
-                        nomeAnalista,
-                        validos,
-                        invalidos,
-                        totalTratado,
-                        percentualValidos,
-                        tiposMaisComuns,
-                        mediaEquipe: calcularMediaEquipe()
-                    };
-                } catch (error) {
-                    console.error("Erro no processAnalystData:", error);
-                    throw error;
+                    if (matchingNames.length === 1) {
+                        nomeAnalista = matchingNames[0];
+                        matricula = Object.entries(matriculaToNome).find(
+                            ([m, n]) => n === nomeAnalista
+                        )[0];
+                    } else if (matchingNames.length > 1) {
+                        alert(`Múltiplos correspondentes encontrados: ${matchingNames.join(", ")}`);
+                        return null;
+                    } else {
+                        alert("Matrícula ou nome não encontrado.");
+                        return null;
+                    }
                 }
+
+                const dentro = [];
+                const fora = [];
+                let totalDentroSLA = 0;
+                let totalTratado = 0;
+
+                for (const row of dados) {
+                    if (row[1] === nomeAnalista) {
+                        if (row[2]) {
+                            dentro.push([row[0], row[3], row[4], row[1]]);
+                            totalDentroSLA++;
+                        } else {
+                            fora.push([row[0], row[3], row[4], row[1]]);
+                        }
+                        totalTratado++;
+                    }
+                }
+
+                const mediaEquipe = calcularMediaEquipe();
+                const slaPercentual = totalTratado > 0 ? ((totalDentroSLA / totalTratado) * 100).toFixed(2) : 0;
+                
+                return {
+                    nomeAnalista,
+                    matricula,
+                    dentro,
+                    fora,
+                    totalDentroSLA,
+                    totalTratado,
+                    mediaEquipe,
+                    slaPercentual
+                };
             }
 
             function displayResults(result) {
                 if (!resultadoDiv) return;
                 
-                try {
-                    const {
-                        nomeAnalista,
-                        validos,
-                        invalidos,
-                        totalTratado,
-                        percentualValidos,
-                        tiposMaisComuns,
-                        mediaEquipe
-                    } = result;
-                    
-                    const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
-                    const metaValidos = percentualValidos >= 80 ? "meta-atingida" : "meta-nao-atingida";
-                    
-                    resultadoDiv.innerHTML = `
-                        <div class="result-card">
-                            <h3>Resultado para: ${nomeAnalista}</h3>
-                            <div class="stats-container">
-                                <div class="stat-card">
-                                    <div>Incidentes Válidos</div>
-                                    <div class="stat-value">${validos.length}</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Incidentes Inválidos</div>
-                                    <div class="stat-value">${invalidos.length}</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Total Tratado</div>
-                                    <div class="stat-value">${totalTratado}</div>
-                                </div>
-                                <div class="stat-card">
-                                    <div>Percentual Válidos</div>
-                                    <div class="stat-value ${metaValidos}">${percentualValidos}%</div>
-                                    <div>Meta: 80%</div>
-                                </div>
+                const {
+                    nomeAnalista,
+                    matricula,
+                    dentro,
+                    fora,
+                    totalDentroSLA,
+                    totalTratado,
+                    mediaEquipe,
+                    slaPercentual
+                } = result;
+                
+                const comparativo = totalTratado >= mediaEquipe ? "acima-media" : "abaixo-media";
+                const slaMeta = slaPercentual >= 80 ? "meta-atingida" : "meta-nao-atingida";
+                
+                resultadoDiv.innerHTML = `
+                    <div class="result-card">
+                        <h3>Resultado para: ${nomeAnalista} (${matricula})</h3>
+                        <div class="stats-container">
+                            <div class="stat-card">
+                                <div>Dentro do SLA</div>
+                                <div class="stat-value">${totalDentroSLA}</div>
                             </div>
-                            <p><strong>Tipos mais comuns:</strong> ${tiposMaisComuns || 'N/A'}</p>
-                            <p><strong>Média da Equipe:</strong> ${mediaEquipe} incidentes/analista</p>
-                            <p><strong>Comparação com a Média:</strong> 
-                                <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span>
-                            </p>
+                            <div class="stat-card">
+                                <div>Fora do SLA</div>
+                                <div class="stat-value">${fora.length}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Total Tratado</div>
+                                <div class="stat-value">${totalTratado}</div>
+                            </div>
+                            <div class="stat-card">
+                                <div>Percentual SLA</div>
+                                <div class="stat-value ${slaMeta}">${slaPercentual}%</div>
+                                <div>Meta: 80%</div>
+                            </div>
                         </div>
-                    `;
-                    
-                    atualizarTabela("tabelaValidos", validos.map(v => [v.incidente, v.caixa, v.tipo, v.analistaCompleto]), "dentro");
-                    atualizarTabela("tabelaInvalidos", invalidos.map(v => [v.incidente, v.caixa, v.tipo, v.analistaCompleto]), "fora");
-                    updateChart(nomeAnalista, validos.length, invalidos.length, mediaEquipe);
-                } catch (error) {
-                    console.error("Erro no displayResults:", error);
-                }
+                        <p><strong>Média da Equipe:</strong> ${mediaEquipe}</p>
+                        <p><strong>Comparação com a Média:</strong> 
+                            <span class="${comparativo}">${totalTratado >= mediaEquipe ? "Acima" : "Abaixo"} da média</span>
+                        </p>
+                    </div>
+                `;
+                
+                atualizarTabela("tabelaDentro", dentro, "dentro");
+                atualizarTabela("tabelaFora", fora, "fora");
+                updateChart(nomeAnalista, totalDentroSLA, fora.length, mediaEquipe);
             }
 
             function calcularMediaEquipe() {
                 if (!dados || dados.length === 0) return 0;
                 
-                try {
-                    const contagemPorAnalista = {};
-                    
-                    dados.forEach(row => {
-                        contagemPorAnalista[row.analistaCompleto] = (contagemPorAnalista[row.analistaCompleto] || 0) + 1;
-                    });
-                    
-                    const numAnalistas = Object.keys(contagemPorAnalista).length;
-                    if (numAnalistas === 0) return 0;
-                    
-                    const totalIncidentes = dados.length;
-                    return (totalIncidentes / numAnalistas).toFixed(2);
-                } catch (error) {
-                    console.error("Erro no calcularMediaEquipe:", error);
-                    return 0;
+                const contagemPorAnalista = {};
+                
+                for (const row of dados) {
+                    const nome = row[1];
+                    contagemPorAnalista[nome] = (contagemPorAnalista[nome] || 0) + 1;
                 }
+                
+                const numAnalistas = Object.keys(contagemPorAnalista).length;
+                if (numAnalistas === 0) return 0;
+                
+                const totalIncidentes = dados.length;
+                return (totalIncidentes / numAnalistas).toFixed(2);
             }
 
             function atualizarTabela(idTabela, tableData, rowClass) {
                 const tabela = document.getElementById(idTabela)?.getElementsByTagName('tbody')[0];
                 if (!tabela) return;
                 
-                try {
-                    tabela.innerHTML = "";
-                    
-                    if (!tableData || tableData.length === 0) {
-                        const row = tabela.insertRow();
-                        const cell = row.insertCell(0);
-                        cell.colSpan = 4;
-                        cell.textContent = "Nenhum incidente encontrado";
-                        cell.style.textAlign = "center";
-                        return;
-                    }
-                    
-                    tableData.forEach(item => {
-                        const row = tabela.insertRow();
-                        row.className = rowClass;
-                        for (let i = 0; i < 4; i++) {
-                            const cell = row.insertCell(i);
-                            cell.textContent = item[i] || "N/A";
-                        }
-                    });
-                } catch (error) {
-                    console.error("Erro no atualizarTabela:", error);
+                tabela.innerHTML = "";
+                
+                if (!tableData || tableData.length === 0) {
+                    const row = tabela.insertRow();
+                    const cell = row.insertCell(0);
+                    cell.colSpan = 4;
+                    cell.textContent = "Nenhum incidente encontrado";
+                    cell.style.textAlign = "center";
+                    return;
                 }
+                
+                tableData.forEach(item => {
+                    const row = tabela.insertRow();
+                    row.className = rowClass;
+                    for (let i = 0; i < 4; i++) {
+                        const cell = row.insertCell(i);
+                        cell.textContent = item[i] || "N/A";
+                    }
+                });
             }
 
-            function updateChart(nomeAnalista, validos, invalidos, mediaEquipe) {
+            function updateChart(nomeAnalista, dentro, fora, mediaEquipe) {
                 const canvas = document.getElementById('performanceChart');
                 if (!canvas) return;
                 
-                try {
-                    const ctx = canvas.getContext('2d');
-                    
-                    if (performanceChart) {
-                        performanceChart.destroy();
-                    }
-                    
-                    performanceChart = new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: ['Válidos', 'Inválidos', 'Média Equipe'],
-                            datasets: [{
-                                label: nomeAnalista,
-                                data: [validos, invalidos, mediaEquipe],
-                                backgroundColor: [
-                                    'rgba(75, 192, 192, 0.7)',
-                                    'rgba(255, 99, 132, 0.7)',
-                                    'rgba(54, 162, 235, 0.7)'
-                                ],
-                                borderColor: [
-                                    'rgba(75, 192, 192, 1)',
-                                    'rgba(255, 99, 132, 1)',
-                                    'rgba(54, 162, 235, 1)'
-                                ],
-                                borderWidth: 1
-                            }]
-                        },
-                        options: {
-                            responsive: true,
-                            maintainAspectRatio: false,
-                            scales: {
-                                y: {
-                                    beginAtZero: true,
-                                    title: {
-                                        display: true,
-                                        text: 'Quantidade de Incidentes'
-                                    }
-                                }
-                            },
-                            plugins: {
+                const ctx = canvas.getContext('2d');
+                
+                if (performanceChart) {
+                    performanceChart.destroy();
+                }
+                
+                performanceChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Dentro SLA', 'Fora SLA', 'Média Equipe'],
+                        datasets: [{
+                            label: nomeAnalista,
+                            data: [dentro, fora, mediaEquipe],
+                            backgroundColor: [
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(255, 99, 132, 0.7)',
+                                'rgba(54, 162, 235, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true,
                                 title: {
                                     display: true,
-                                    text: 'Desempenho do Analista',
-                                    font: {
-                                        size: 16
-                                    }
-                                },
-                                legend: {
-                                    display: false
+                                    text: 'Quantidade de Incidentes'
                                 }
                             }
+                        },
+                        plugins: {
+                            title: {
+                                display: true,
+                                text: 'Desempenho do Analista',
+                                font: {
+                                    size: 16
+                                }
+                            },
+                            legend: {
+                                display: false
+                            }
                         }
-                    });
-                } catch (error) {
-                    console.error("Erro no updateChart:", error);
-                }
+                    }
+                });
             }
 
             function limparDados() {
-                try {
-                    dados = [];
-                    // Removemos o localStorage.removeItem já que não estamos mais usando localStorage
-                    // localStorage.removeItem("dadosPlanilha");
+                dados = [];
+                localStorage.removeItem("dadosPlanilha");
+                
+                if (mediaEquipeDiv) mediaEquipeDiv.innerHTML = "";
+                if (resultadoDiv) resultadoDiv.innerHTML = "";
+                
+                const elementsToClear = [
+                    'matricula', 'upload',
+                    'tabelaDentro', 'tabelaFora'
+                ];
+                
+                elementsToClear.forEach(id => {
+                    const element = document.getElementById(id);
+                    if (!element) return;
                     
-                    if (mediaEquipeDiv) mediaEquipeDiv.innerHTML = "";
-                    if (resultadoDiv) resultadoDiv.innerHTML = "";
-                    
-                    const elementsToClear = [
-                        'analista', 'upload',
-                        'tabelaValidos', 'tabelaInvalidos'
-                    ];
-                    
-                    elementsToClear.forEach(id => {
-                        const element = document.getElementById(id);
-                        if (!element) return;
-                        
-                        if (element.tagName === 'INPUT') {
-                            element.value = "";
-                        } else if (id.startsWith('tabela')) {
-                            const tbody = element.getElementsByTagName('tbody')[0];
-                            if (tbody) tbody.innerHTML = "";
-                        }
-                    });
-                    
-                    if (performanceChart) {
-                        performanceChart.destroy();
-                        performanceChart = null;
+                    if (element.tagName === 'INPUT') {
+                        element.value = "";
+                    } else if (id.startsWith('tabela')) {
+                        const tbody = element.getElementsByTagName('tbody')[0];
+                        if (tbody) tbody.innerHTML = "";
                     }
-                } catch (error) {
-                    console.error("Erro no limparDados:", error);
+                });
+                
+                if (performanceChart) {
+                    performanceChart.destroy();
+                    performanceChart = null;
                 }
             }
 
             function showSpinner() {
-                try {
-                    if (spinner) {
-                        spinner.style.display = "block";
-                        spinnerVisible = true;
-                    }
-                } catch (error) {
-                    console.error("Erro no showSpinner:", error);
-                }
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.style.display = "block";
             }
 
             function hideSpinner() {
-                try {
-                    if (spinner) {
-                        spinner.style.display = "none";
-                        spinnerVisible = false;
-                    }
-                } catch (error) {
-                    console.error("Erro no hideSpinner:", error);
-                }
+                const spinner = document.getElementById('spinner');
+                if (spinner) spinner.style.display = "none";
             }
 
             // Inicialização - garantir estado limpo
