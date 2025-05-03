@@ -128,7 +128,7 @@
         
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
-            <input type="text" id="analista" placeholder="Digite o nome ou matrícula do analista" aria-label="Digite o nome do analista">
+            <input type="text" id="analista" placeholder="Digite o nome, login ou matrícula" aria-label="Digite o nome do analista">
             <button id="consultarBtn">Consultar</button>
             <button id="limparBtn">Limpar</button>
         </div>
@@ -249,12 +249,20 @@
                         
                         const row = rawData[i];
                         if (row && row.length >= 5) {
+                            // Extrair login do analista (assumindo que está no formato "N123456 NOME COMPLETO")
+                            const analistaCompleto = row[1]?.toString().trim() || "N/A";
+                            const partesNome = analistaCompleto.split(' ');
+                            const login = partesNome.length > 0 ? partesNome[0] : "N/A";
+                            const nomeCompleto = partesNome.slice(1).join(' ');
+                            
                             dados.push({
-                                incidente: row[0]?.toString().trim() || "N/A",     // INCIDENTE
-                                analista: row[1]?.toString().trim() || "N/A",      // ANALISTA
-                                valido: row[2]?.toString().trim().toLowerCase() === "sim", // VALIDO
-                                caixa: row[3]?.toString().trim() || "N/A",         // CAIXA
-                                tipo: row[4]?.toString().trim() || "N/A"           // TIPO
+                                incidente: row[0]?.toString().trim() || "N/A",
+                                analistaCompleto: analistaCompleto,
+                                login: login,
+                                nomeCompleto: nomeCompleto,
+                                valido: row[2]?.toString().trim().toLowerCase() === "sim",
+                                caixa: row[3]?.toString().trim() || "N/A",
+                                tipo: row[4]?.toString().trim() || "N/A"
                             });
                         }
                         processedRows++;
@@ -307,7 +315,7 @@
                 const percentualValidos = (validos / totalIncidents * 100).toFixed(2);
                 
                 // Analistas únicos
-                const analistasUnicos = [...new Set(dados.map(row => row.analista))];
+                const analistasUnicos = [...new Set(dados.map(row => row.analistaCompleto))];
                 const numAnalistas = analistasUnicos.length;
                 const mediaPorAnalista = numAnalistas > 0 ? (totalIncidents / numAnalistas).toFixed(2) : 0;
                 
@@ -373,7 +381,7 @@
 
                 const input = document.getElementById('analista')?.value.trim();
                 if (!input) {
-                    alert("Por favor, digite o nome ou matrícula do analista para consultar.");
+                    alert("Por favor, digite o nome, login ou matrícula do analista para consultar.");
                     return;
                 }
 
@@ -399,17 +407,23 @@
                 const normalizedInput = input.trim().toUpperCase();
                 
                 // Buscar analistas que correspondam ao input
-                const analistasUnicos = [...new Set(dados.map(row => row.analista))];
+                const analistasUnicos = [...new Set(dados.map(row => ({
+                    login: row.login,
+                    nomeCompleto: row.nomeCompleto,
+                    analistaCompleto: row.analistaCompleto
+                })))];
                 
                 // Filtra os analistas que contêm o texto pesquisado (case insensitive)
                 const matchingAnalistas = analistasUnicos.filter(analista => {
-                    const normalizedAnalista = analista.toUpperCase().trim();
-                    return normalizedAnalista.includes(normalizedInput) || 
-                           normalizedInput.includes(normalizedAnalista.split(' ')[0]);
-                });
+                    return (
+                        analista.login.toUpperCase().includes(normalizedInput) ||
+                        analista.nomeCompleto.toUpperCase().includes(normalizedInput) ||
+                        analista.analistaCompleto.toUpperCase().includes(normalizedInput)
+                    );
+                }).map(a => a.analistaCompleto);
                 
                 if (matchingAnalistas.length === 0) {
-                    alert("Nenhum analista encontrado com esse nome/matrícula.");
+                    alert("Nenhum analista encontrado com esse nome/login/matrícula.");
                     return null;
                 }
                 
@@ -435,7 +449,7 @@
                 }
                 
                 const incidentesAnalista = dados.filter(row => 
-                    row.analista.toUpperCase().trim() === nomeAnalista.toUpperCase().trim()
+                    row.analistaCompleto.toUpperCase().trim() === nomeAnalista.toUpperCase().trim()
                 );
                 
                 const validos = incidentesAnalista.filter(row => row.valido);
@@ -512,8 +526,8 @@
                     </div>
                 `;
                 
-                atualizarTabela("tabelaValidos", validos.map(v => [v.incidente, v.caixa, v.tipo, v.analista]), "dentro");
-                atualizarTabela("tabelaInvalidos", invalidos.map(v => [v.incidente, v.caixa, v.tipo, v.analista]), "fora");
+                atualizarTabela("tabelaValidos", validos.map(v => [v.incidente, v.caixa, v.tipo, v.analistaCompleto]), "dentro");
+                atualizarTabela("tabelaInvalidos", invalidos.map(v => [v.incidente, v.caixa, v.tipo, v.analistaCompleto]), "fora");
                 updateChart(nomeAnalista, validos.length, invalidos.length, mediaEquipe);
             }
 
@@ -523,7 +537,7 @@
                 const contagemPorAnalista = {};
                 
                 dados.forEach(row => {
-                    contagemPorAnalista[row.analista] = (contagemPorAnalista[row.analista] || 0) + 1;
+                    contagemPorAnalista[row.analistaCompleto] = (contagemPorAnalista[row.analistaCompleto] || 0) + 1;
                 });
                 
                 const numAnalistas = Object.keys(contagemPorAnalista).length;
