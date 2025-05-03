@@ -128,7 +128,7 @@
         
         <div class="input-group">
             <input type="file" id="upload" accept=".xlsx,.xls" aria-label="Selecione o arquivo Excel">
-            <input type="text" id="analista" placeholder="Digite o nome do analista" aria-label="Digite o nome do analista">
+            <input type="text" id="analista" placeholder="Digite o nome ou matrícula do analista" aria-label="Digite o nome do analista">
             <button id="consultarBtn">Consultar</button>
             <button id="limparBtn">Limpar</button>
         </div>
@@ -371,9 +371,9 @@
                     }
                 }
 
-                const input = document.getElementById('analista')?.value.trim().toUpperCase();
+                const input = document.getElementById('analista')?.value.trim();
                 if (!input) {
-                    alert("Por favor, digite o nome de um analista para consultar.");
+                    alert("Por favor, digite o nome ou matrícula do analista para consultar.");
                     return;
                 }
 
@@ -395,24 +395,48 @@
             }
 
             function processAnalystData(input) {
-                // Buscar analistas que correspondam ao input (case insensitive)
+                // Normaliza o input removendo espaços extras e colocando em maiúsculas
+                const normalizedInput = input.trim().toUpperCase();
+                
+                // Buscar analistas que correspondam ao input
                 const analistasUnicos = [...new Set(dados.map(row => row.analista))];
-                const matchingAnalistas = analistasUnicos.filter(analista => 
-                    analista.toUpperCase().includes(input)
-                );
+                
+                // Filtra os analistas que contêm o texto pesquisado (case insensitive)
+                const matchingAnalistas = analistasUnicos.filter(analista => {
+                    const normalizedAnalista = analista.toUpperCase().trim();
+                    return normalizedAnalista.includes(normalizedInput) || 
+                           normalizedInput.includes(normalizedAnalista.split(' ')[0]);
+                });
                 
                 if (matchingAnalistas.length === 0) {
-                    alert("Nenhum analista encontrado com esse nome.");
+                    alert("Nenhum analista encontrado com esse nome/matrícula.");
                     return null;
                 }
+                
+                let nomeAnalista;
                 
                 if (matchingAnalistas.length > 1) {
-                    alert(`Múltiplos analistas encontrados: ${matchingAnalistas.join(", ")}`);
-                    return null;
+                    // Mostra lista de analistas encontrados para seleção
+                    const selecionado = prompt(`Múltiplos analistas encontrados:\n${matchingAnalistas.join("\n")}\n\nDigite o nome completo ou matrícula do analista desejado:`);
+                    if (!selecionado) return null;
+                    
+                    // Tenta encontrar o analista selecionado exatamente
+                    const analistaExato = matchingAnalistas.find(a => 
+                        a.toUpperCase().trim() === selecionado.toUpperCase().trim()
+                    );
+                    
+                    if (!analistaExato) {
+                        alert("Analista não encontrado.");
+                        return null;
+                    }
+                    nomeAnalista = analistaExato;
+                } else {
+                    nomeAnalista = matchingAnalistas[0];
                 }
                 
-                const nomeAnalista = matchingAnalistas[0];
-                const incidentesAnalista = dados.filter(row => row.analista === nomeAnalista);
+                const incidentesAnalista = dados.filter(row => 
+                    row.analista.toUpperCase().trim() === nomeAnalista.toUpperCase().trim()
+                );
                 
                 const validos = incidentesAnalista.filter(row => row.valido);
                 const invalidos = incidentesAnalista.filter(row => !row.valido);
